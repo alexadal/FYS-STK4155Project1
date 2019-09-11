@@ -44,7 +44,16 @@ def OLS_sk(x,y,z,deg):
     return clf.fit(X_,z)
 
 
-def pred_(x,y,b):
+def pred_(x,y,beta,deg):
+    x_deg = np.column_stack((x, y))
+    poly = PolynomialFeatures(degree=deg)
+    X_ = poly.fit_transform(x_deg)
+    return X_@beta
 
+def pred_skl(x,y,beta,deg):
+    x_deg = np.column_stack((x, y))
+    poly = PolynomialFeatures(degree=deg)
+    X_ = poly.fit_transform(x_deg)
+    return beta.predict(X_)
 
 

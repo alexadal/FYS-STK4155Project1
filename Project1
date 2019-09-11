@@ -6,7 +6,7 @@ from matplotlib.ticker import LinearLocator, FormatStrFormatter
 import numpy as np
 from random import seed
 from numpy.random import rand
-from functions import FrankeFunc, ols_svd, OLS_sk, ols_inv
+from functions import FrankeFunc, ols_svd, OLS_sk, ols_inv, pred_,pred_skl
 from sklearn.linear_model import LinearRegression
 
 
@@ -49,9 +49,45 @@ print(beta2)
 
 
 
+z1_ = pred_(x1,y1,beta2,Deg_max)
+z2_ = pred_skl(x1,y1,beta1,Deg_max)
+
+
+
+
+
 """
 Part a)
 """
+
+# Plot the surface.
+fig = plt.figure()
+ax1 = fig.gca(projection='3d')
+ax1 = fig.add_subplot(121, projection='3d')
+
+#surf = ax.plot_surface(x_train, y_train, z, cmap=cm.coolwarm,
+#                      linewidth=0, antialiased=False)
+ax1.plot_surface(x_train, y_train, z, cmap=cm.coolwarm,
+                       linewidth=0, antialiased=False)
+ax1.scatter(x_train, y_train, z, c='b', marker='o')
+
+# Customize the z axis.
+ax1.set_zlim(-0.10, 1.40)
+ax1.zaxis.set_major_locator(LinearLocator(10))
+ax1.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
+
+# Add a color bar which maps values to colors.
+fig.colorbar(ax1, shrink=0.5, aspect=5)
+
+ax2 = fig.add_subplot(122)
+cs = ax2.contourf(x_train, y_train, z1_)
+ax2.contour(cs, colors='k')
+fig.colorbar(cs, ax=ax2)
+
+
+
+plt.show()
+
 
 
 #Need to find Standard errors of Beta
