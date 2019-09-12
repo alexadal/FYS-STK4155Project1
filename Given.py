@@ -17,6 +17,8 @@ x, y = np.meshgrid(x,y)
 
 
 
+
+
 def FrankeFunction(x,y):
     term1 = 0.75*np.exp(-(0.25*(9*x-2)**2) - 0.25*((9*y-2)**2))
     term2 = 0.75*np.exp(-((9*x+1)**2)/49.0 - 0.1*(9*y+1))
@@ -26,6 +28,7 @@ def FrankeFunction(x,y):
 
 
 z = FrankeFunction(x, y)
+
 
 # Plot the surface.
 surf = ax.plot_surface(x, y, z, cmap=cm.coolwarm,

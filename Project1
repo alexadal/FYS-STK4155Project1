@@ -6,70 +6,71 @@ from matplotlib.ticker import LinearLocator, FormatStrFormatter
 import numpy as np
 from random import seed
 from numpy.random import rand
-from functions import FrankeFunc, ols_svd, OLS_sk, ols_inv, pred_,pred_skl
+from functions import FrankeFunc, ols_svd, OLS_sk, ols_inv, pred_,pred_skl, Ridge_sk, MSE, R_2, OLS5_, pred5_
+import pandas as pd
 from sklearn.linear_model import LinearRegression
 
 
 
 #Datapoints - how many & DegreeMax
 
-D = 10
+D = 100
 Deg_max = 5
+lamd = 0.0
 
 # Make data grid give same shape as x in exercise
 np.random.seed(60)
-
-
 
 x1 = rand(D)
 y1 = rand(D)
 
 print(x1.shape)
 
-
-
+#Sort before printing
 X = np.sort(x1,axis=0)
 Y = np.sort(y1,axis=0)
-
-
-x_train,y_train = np.meshgrid(X,Y)
-
-z = FrankeFunc(x_train,y_train,0.25,True)
-
-
+#Create mehgrid
+x_train,y_train = np.meshgrid(X, Y)
+#True function or train function
+z = FrankeFunc(x_train,y_train,0.2,True)
 print(z.shape)
 
-beta1 = OLS_sk(x1,y1,z,Deg_max)
-beta2 = ols_svd(x1,y1,z,2)
+#Initiate betas
 
-print(beta1.coef_)
-print("------------")
-print(beta2)
+beta1 = OLS_sk(X,Y,z,Deg_max)
+beta2 = ols_svd(X,Y,z,Deg_max)
+beta3 = Ridge_sk(X,Y,z,lamd,Deg_max)
+beta4 = OLS5_(X,Y,z)
 
+#Create predictors/fitted values
 
-
-
-z1_ = pred_skl(x1,y1,beta1,Deg_max)
-z2_ = pred_(x1,y1,beta2,2)
-
-
-
+z1_ = pred_skl(X,Y,beta1,Deg_max)
+z2_ = pred_(X,Y,beta2,Deg_max)
+z3_ = pred_skl(X,Y,beta3,Deg_max)
+z4_ = pred5_(X,Y,beta4)
 
 
 """
+------------------------------------------------------------------------------------
 Part a)
+------------------------------------------------------------------------------------
 """
+
+
+
+
+#Plot figures
 fig = plt.figure()
 ax1 = fig.gca(projection='3d')
 
 # Plot the surface.
-surf1 = ax1.plot_surface(x_train, y_train, z1_, cmap=cm.coolwarm,
-                       linewidth=0, antialiased=False)
+surf1 = ax1.plot_surface(x_train, y_train, z, cmap=cm.coolwarm,
+                       linewidth=0,alpha = 0.3, antialiased=False)
 
-surf2 = ax1.plot_surface(x_train, y_train, z2_, cmap=cm.winter,
-                       linewidth=0,alpha = 0.2, antialiased=False)
+surf2 = ax1.plot_surface(x_train, y_train, z4_, cmap=cm.winter,
+                       linewidth=0,alpha = 0.6, antialiased=False)
 
-ax1.scatter(x_train,y_train,z, c='b', marker='o')
+ax1.scatter(x_train, y_train,z,s=0.5, color = 'black', alpha =1)
 
 # Customize the z axis.
 ax1.set_zlim(-0.10, 1.40)
@@ -77,21 +78,48 @@ ax1.zaxis.set_major_locator(LinearLocator(10))
 ax1.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
 
 # Add a color bar which maps values to colors.
-fig.colorbar(surf1, shrink=0.5, aspect=5)
+fig.colorbar(surf1,ax=ax1, shrink=0.5, aspect=5)
 fig.colorbar(surf2, shrink=0.5, aspect=5)
 
 plt.show()
 
 
+#Find Statistical Properties
+print("R2: ", R_2(z,z3_))
+print("MSE: ",MSE(z, z3_))
 
-#Need to find Standard errors of Beta
+print("R2: ", R_2(z,z2_))
+print("MSE: ",MSE(z, z2_))
 
 
+#Find analytically the variance of the betas
+
+print(beta2)
+Variances = np.zeros((len(beta4[:,0]),len(beta4[0])))
+Variances = np.var(beta4,axis=1)
+
+#Create confidence interval of 95% --> z*=1.96
+print(beta2.shape)
+print(Variances.shape)
+print(Variances)
+
+#Find standard error
+se_beta = np.sqrt(Variances)
 
 
+C_i = np.zeros((len(beta4[:,0]),(len(beta4[0,:])),2))
+#Check Shape
 
 
+for i in range((len(beta2[:,0]))):
+    for j in range((len(beta2[0,:]))):
+        C_i[i][j][0] = beta4[i][j] - 1.96*se_beta[i]
+        C_i[i][j][1] = beta4[i][j] + 1.96 * se_beta[i]
 
+
+print("Beta Confidence Intervals: ",C_i)
+
+print(C_i.shape)
 
 
 #Insert Data intp Franke function
@@ -99,6 +127,3 @@ plt.show()
 
 
 
-"""
-Plot
-"""
