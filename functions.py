@@ -103,16 +103,17 @@ def Conf_i(z,z_,x,y,beta,deg):
     X_ = poly.fit_transform(x_deg)
 
     sigma = (1./(len(z)-len(X_[0,:])-1))*sum(((z-z_)**2))
-    #sigma2 = sigma.reshape(-1, 5)
     covar = np.linalg.inv(X_.T.dot(X_))*sigma
 
-    sigma_d = np.sqrt(np.diagonal(covar))
+    se_beta = np.sqrt(np.diagonal(covar))
     np.set_printoptions(precision=2)
     print("Sigma",sigma)
     print(z.shape)
-    print(sigma_d)
-
-
-    #return sigma_d
-    
-
+    print(se_beta)
+    se_beta.reshape(-1,1)
+    interval = np.zeros((len(beta[:, 0]), (len(beta[0, :])), 2))
+    for i in range((len(beta[:, 0]))):
+        for j in range((len(beta[0, :]))):
+            interval[i][j][0] = beta[i][j] - 1.96 * se_beta[i]
+            interval[i][j][1] = beta[i][j] + 1.96 * se_beta[i]
+    return interval

@@ -122,6 +122,10 @@ se_beta = np.sqrt(Variances)
 print("Ravel Y",Y.shape)
 
 C_i = Conf_i(z_true,z3_,x1d,y1d,beta3,Deg_max)
+
+print("Confidence Intervals",C_i)
+
+print(beta3)
 """
 
 np.zeros((len(beta4[:,0]),(len(beta4[0,:])),2))
