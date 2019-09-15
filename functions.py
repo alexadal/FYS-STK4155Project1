@@ -23,11 +23,8 @@ def DesignMatrix5(x,y):
            x**5, x**4*y, x**3*y**2, x**2*y**3, x*y**4, y**5]
 
 
-
-
-
 def ols_svd(x: np.ndarray, y: np.ndarray, z, deg) -> np.ndarray:
-    x_deg = np.column_stack((x, y))
+    x_deg = np.c_[x, y]
     poly = PolynomialFeatures(degree=deg)
     X_ = poly.fit_transform(x_deg)
     print(X_)
@@ -36,7 +33,7 @@ def ols_svd(x: np.ndarray, y: np.ndarray, z, deg) -> np.ndarray:
 
 
 def ols_inv(x: np.ndarray, y: np.ndarray, z, deg) -> np.ndarray:
-    x_deg = np.column_stack((x, y))
+    x_deg = np.c_[x, y]
     poly = PolynomialFeatures(degree=deg)
     X_ = poly.fit_transform(x_deg)
     print(X_)
@@ -44,7 +41,7 @@ def ols_inv(x: np.ndarray, y: np.ndarray, z, deg) -> np.ndarray:
 
 
 def OLS_sk(x, y, z, deg):
-    x_deg = np.column_stack((x, y))
+    x_deg = np.c_[x, y]
     poly = PolynomialFeatures(degree=deg)
     X_ = poly.fit_transform(x_deg)
     clf = LinearRegression()
@@ -55,14 +52,19 @@ def OLS5_(x, y, z):
     u, s, v = scl.svd(x_deg)
     return v.T @ scl.pinv(scl.diagsvd(s, u.shape[0], v.shape[0])) @ u.T @ z
 
-
-
-
 def Ridge_sk(x, y, z, lamd, deg):
-    x_deg = np.column_stack((x, y))
+    x_deg = np.c_[x, y]
     poly = PolynomialFeatures(degree=deg)
     X_ = poly.fit_transform(x_deg)
     return Ridge(alpha=lamd).fit(X_, z)
+
+
+def Ridge(x, y, z, lamd, deg):
+    x_deg = np.c_[x, y]
+    poly = PolynomialFeatures(degree=deg)
+    X_ = poly.fit_transform(x_deg)
+    l_vec = np.eye(len(X_[0])) * lamd
+    return np.linalg.inv(X_.T.dot(X_)+l_vec).dot(X_.T).dot(z)
 
 def pred5_(x, y, beta):
     x_deg = DesignMatrix5(x,y)
@@ -71,14 +73,14 @@ def pred5_(x, y, beta):
 
 
 def pred_(x, y, beta, deg):
-    x_deg = np.column_stack((x, y))
+    x_deg = np.c_[x, y]
     poly = PolynomialFeatures(degree=deg)
     X_ = poly.fit_transform(x_deg)
     return X_ @ beta
 
 
 def pred_skl(x, y, beta, deg):
-    x_deg = np.column_stack((x, y))
+    x_deg = np.c_[x, y]
     poly = PolynomialFeatures(degree=deg)
     X_ = poly.fit_transform(x_deg)
     return beta.predict(X_)
@@ -94,5 +96,23 @@ def R_2(z, z_):
     z, z_ = z.flatten(), z_.flatten()
     return 1 - np.sum((z - z_) ** 2) / np.sum((z - np.mean(z_)) ** 2)
 
-def variance(beta):
-    u, s, v = scl.svd(X_)
+
+def Conf_i(z,z_,x,y,beta,deg):
+    x_deg = np.c_[x, y]
+    poly = PolynomialFeatures(degree=deg)
+    X_ = poly.fit_transform(x_deg)
+
+    sigma = (1./(len(z)-len(X_[0,:])-1))*sum(((z-z_)**2))
+    #sigma2 = sigma.reshape(-1, 5)
+    covar = np.linalg.inv(X_.T.dot(X_))*sigma
+
+    sigma_d = np.sqrt(np.diagonal(covar))
+    np.set_printoptions(precision=2)
+    print("Sigma",sigma)
+    print(z.shape)
+    print(sigma_d)
+
+
+    #return sigma_d
+    
+

@@ -6,7 +6,7 @@ from matplotlib.ticker import LinearLocator, FormatStrFormatter
 import numpy as np
 from random import seed
 from numpy.random import rand
-from functions import FrankeFunc, ols_svd, OLS_sk, ols_inv, pred_,pred_skl, Ridge_sk, MSE, R_2, OLS5_, pred5_
+from functions import FrankeFunc, ols_svd, OLS_sk, ols_inv, pred_,pred_skl, Ridge_sk, MSE, R_2, OLS5_, pred5_, Ridge, Conf_i
 import pandas as pd
 from sklearn.linear_model import LinearRegression
 
@@ -16,37 +16,47 @@ from sklearn.linear_model import LinearRegression
 
 D = 100
 Deg_max = 5
-lamd = 0.0
+lamd = 0.2
 
 # Make data grid give same shape as x in exercise
 np.random.seed(60)
 
-x1 = rand(D)
-y1 = rand(D)
+x1 = np.random.rand(D,1)
+y1 = np.random.rand(D,1)
 
 print(x1.shape)
 
 #Sort before printing
 X = np.sort(x1,axis=0)
 Y = np.sort(y1,axis=0)
-#Create mehgrid
 x_train,y_train = np.meshgrid(X, Y)
+
+x, y = np.meshgrid(X,Y)
+
+x1d = x.reshape((D**2, 1))
+y1d = y.reshape((D**2, 1))
+#Create mehgrid
+z = FrankeFunc(x_train,y_train,0.2,False)
 #True function or train function
-z = FrankeFunc(x_train,y_train,0.2,True)
+
+z_true = FrankeFunc(x1d,y1d,0.2,False)
+
 print(z.shape)
 
 #Initiate betas
+X = X.ravel()
+Y = Y.ravel()
 
 beta1 = OLS_sk(X,Y,z,Deg_max)
 beta2 = ols_svd(X,Y,z,Deg_max)
-beta3 = Ridge_sk(X,Y,z,lamd,Deg_max)
+beta3 = Ridge(x1d,y1d,z_true,lamd,Deg_max)
 beta4 = OLS5_(X,Y,z)
 
-#Create predictors/fitted values
+#Create predicxtors/fitted values
 
 z1_ = pred_skl(X,Y,beta1,Deg_max)
 z2_ = pred_(X,Y,beta2,Deg_max)
-z3_ = pred_skl(X,Y,beta3,Deg_max)
+z3_ = pred_(x1d,y1d,beta3,Deg_max)
 z4_ = pred5_(X,Y,beta4)
 
 
@@ -54,23 +64,24 @@ z4_ = pred5_(X,Y,beta4)
 ------------------------------------------------------------------------------------
 Part a)
 ------------------------------------------------------------------------------------
+
 """
 
 
 
-
+"""
 #Plot figures
 fig = plt.figure()
 ax1 = fig.gca(projection='3d')
 
 # Plot the surface.
-surf1 = ax1.plot_surface(x_train, y_train, z, cmap=cm.coolwarm,
-                       linewidth=0,alpha = 0.3, antialiased=False)
+surf1 = ax1.plot_surface(x_train, y_train, z3_, cmap=cm.coolwarm,
+                       linewidth=0,alpha = 0.8, antialiased=False)
 
 surf2 = ax1.plot_surface(x_train, y_train, z4_, cmap=cm.winter,
-                       linewidth=0,alpha = 0.6, antialiased=False)
+                       linewidth=0,alpha = 0.0, antialiased=False)
 
-ax1.scatter(x_train, y_train,z,s=0.5, color = 'black', alpha =1)
+ax1.scatter(x_train, y_train,z,s=0.3, color = 'black', alpha =0.7)
 
 # Customize the z axis.
 ax1.set_zlim(-0.10, 1.40)
@@ -82,7 +93,7 @@ fig.colorbar(surf1,ax=ax1, shrink=0.5, aspect=5)
 fig.colorbar(surf2, shrink=0.5, aspect=5)
 
 plt.show()
-
+"""
 
 #Find Statistical Properties
 print("R2: ", R_2(z,z3_))
@@ -107,7 +118,13 @@ print(Variances)
 se_beta = np.sqrt(Variances)
 
 
-C_i = np.zeros((len(beta4[:,0]),(len(beta4[0,:])),2))
+
+print("Ravel Y",Y.shape)
+
+C_i = Conf_i(z_true,z3_,x1d,y1d,beta3,Deg_max)
+"""
+
+np.zeros((len(beta4[:,0]),(len(beta4[0,:])),2))
 #Check Shape
 
 
@@ -119,11 +136,10 @@ for i in range((len(beta2[:,0]))):
 
 print("Beta Confidence Intervals: ",C_i)
 
+
+
 print(C_i.shape)
 
 
-#Insert Data intp Franke function
-
-
-
+"""
 
