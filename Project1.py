@@ -6,7 +6,7 @@ from matplotlib.ticker import LinearLocator, FormatStrFormatter
 import numpy as np
 from random import seed
 from numpy.random import rand
-from functions import FrankeFunc, ols_svd, OLS_sk, ols_inv, pred_,pred_skl, Ridge_sk, MSE, R_2, OLS5_, pred5_, Ridge, Conf_i
+from functions import FrankeFunc, ols_svd, OLS_sk, ols_inv, pred_,pred_skl, Ridge_sk, MSE, R_2, OLS5_, pred5_, Ridge, Conf_i, k_fold
 import pandas as pd
 from sklearn.linear_model import LinearRegression
 
@@ -33,8 +33,13 @@ x_train,y_train = np.meshgrid(X, Y)
 
 x, y = np.meshgrid(X,Y)
 
-x1d = x.reshape((D**2, 1))
-y1d = y.reshape((D**2, 1))
+#x1d = x.reshape((D**2, 1))
+#y1d = y.reshape((D**2, 1))
+
+x1d = x.ravel()
+y1d = y.ravel()
+
+
 #Create mehgrid
 z = FrankeFunc(x_train,y_train,0.2,False)
 #True function or train function
@@ -48,14 +53,14 @@ X = X.ravel()
 Y = Y.ravel()
 
 beta1 = OLS_sk(X,Y,z,Deg_max)
-beta2 = ols_svd(X,Y,z,Deg_max)
+beta2 = ols_svd(x1d,y1d,z_true,Deg_max)
 beta3 = Ridge(x1d,y1d,z_true,lamd,Deg_max)
 beta4 = OLS5_(X,Y,z)
 
 #Create predicxtors/fitted values
 
 z1_ = pred_skl(X,Y,beta1,Deg_max)
-z2_ = pred_(X,Y,beta2,Deg_max)
+z2_ = pred_(x1d,y1d,beta2,Deg_max)
 z3_ = pred_(x1d,y1d,beta3,Deg_max)
 z4_ = pred5_(X,Y,beta4)
 
@@ -121,11 +126,18 @@ se_beta = np.sqrt(Variances)
 
 print("Ravel Y",Y.shape)
 
-C_i = Conf_i(z_true,z3_,x1d,y1d,beta3,Deg_max)
 
-print("Confidence Intervals",C_i)
 
-print(beta3)
+C_i = Conf_i(z_true,z2_,x1d,y1d,beta2,Deg_max)
+
+print("Confidence Intervals OLS",C_i)
+
+
+C_i_ridge = Conf_i(z_true,z3_,x1d,y1d,beta3,Deg_max)
+
+print("Confidence Intervals Ridge",C_i_ridge)
+
+
 """
 
 np.zeros((len(beta4[:,0]),(len(beta4[0,:])),2))
@@ -147,3 +159,25 @@ print(C_i.shape)
 
 """
 
+"""
+------------------------------------------------------------------------------------
+Initiate k-folkd
+------------------------------------------------------------------------------------
+
+"""
+
+kfold = 5
+
+
+predictr_f = k_fold(x1d,y1d,z_true,Deg_max,kfold,'Ridge',False)
+
+predictr_t = k_fold(x1d,y1d,z_true,Deg_max,kfold,'Ridge')
+
+predictr_of = k_fold(x1d,y1d,z_true,Deg_max,kfold,'OLS',False)
+
+predictr_ot = k_fold(x1d,y1d,z_true,Deg_max,kfold,'OLS')
+
+print("Predictor Matrix False",predictr_f)
+print("Predictor Matrix True",predictr_t)
+print("Predictor Matrix OLS false",predictr_of)
+print("Predictor Matrix OLS true",predictr_ot)
