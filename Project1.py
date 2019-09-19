@@ -20,10 +20,9 @@ np.set_printoptions(precision=4)
 
 D = 100
 Deg_max = 5
-lamd = 0.2
-
+lamd = 0.0
 # Make data grid give same shape as x in exercise
-np.random.seed(60)
+np.random.seed(10)
 
 x1 = np.random.rand(D,1)
 y1 = np.random.rand(D,1)
@@ -139,11 +138,11 @@ Initiate k-fold
 kfold1 = 5
 
 
-predictr_f = k_fold(x1d,y1d,z_true,Deg_max,kfold1,'Ridge',False)
+predictr_f = k_fold(x1d,y1d,z_true,Deg_max,kfold1,'Ridge',shuffle=False,lamd=lamd)
 
-predictr_t = k_fold(x1d,y1d,z_true,Deg_max,kfold1,'Ridge')
+predictr_t = k_fold(x1d,y1d,z_true,Deg_max,kfold1,'Ridge',shuffle=False,lamd=lamd)
 
-predictr_of = k_fold(x1d,y1d,z_true,Deg_max,kfold1,'OLS',False)
+predictr_of = k_fold(x1d,y1d,z_true,Deg_max,kfold1,'OLS',shuffle=False)
 
 predictr_ot = k_fold(x1d,y1d,z_true,Deg_max,kfold1,'OLS')
 
@@ -161,25 +160,29 @@ Test k-fold with sklearn
 
 
 k = 5
-kfold = KFold(n_splits = k)
+kfold = KFold(n_splits = k,shuffle=True)
+kfold2 = KFold(n_splits = k,shuffle=False)
 
-poly = PolynomialFeatures(degree = 5)
-# Perform the cross-validation to estimate MSE
-scores_KFold = np.zeros((1, k))
+
 
 x_deg = np.c_[x1d, y1d]
 poly = PolynomialFeatures(degree=5)
 X_ = poly.fit_transform(x_deg)
 
 
-lmb = 0
+lmb = 0.0
 
 ridge = Ridge(alpha=lmb)
 
 estimated_mse_folds = cross_val_score(ridge, X_, z_true, scoring='neg_mean_squared_error', cv=kfold)
+estimated_mse_folds2 = cross_val_score(ridge, X_, z_true, scoring='neg_mean_squared_error', cv=kfold2)
 
 # cross_val_score return an array containing the estimated negative mse for every fold.
 # we have to the the mean of every array in order to get an estimate of the mse of the model
 estimated_mse_sklearn = np.abs(estimated_mse_folds)
+estimated_mse_sklearn2 = np.abs(estimated_mse_folds2)
 
-print("SK K-Fold",estimated_mse_sklearn)
+print("SK K-Fold True",np.average(estimated_mse_sklearn))
+print("SK K-Fold False",np.average(estimated_mse_sklearn2))
+
+

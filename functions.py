@@ -70,9 +70,9 @@ def Ridge_x(x, y, z, lamd, deg):
     l_vec = np.eye(len(X_[0])) * lamd
     return np.linalg.inv(X_.T.dot(X_)+l_vec).dot(X_.T).dot(z)
 
-def Ridge_X(X_, z, lamd=None):
-    lamd = lamd or 0
+def Ridge_X(X_, z, lamd):
     l_vec = np.eye(len(X_[0])) * lamd
+    #print("Lvec",l_vec)
     return np.linalg.inv(X_.T.dot(X_)+l_vec).dot(X_.T).dot(z)
 
 def pred5_(x, y, beta):
@@ -129,7 +129,9 @@ def Conf_i(z,z_,x,y,beta,deg):
     se_beta.reshape(-1,1)
     interval = np.zeros((len(beta), 3))
     for i in range((len(beta))):
+        #Save first row beta
         interval[i][0] = beta[i]
+        #Save interval, lowwer first, 1.96 as we want 95% CI
         interval[i][1] = beta[i] - 1.96 * se_beta[i]
         interval[i][2] = beta[i] + 1.96 * se_beta[i]
     return interval
@@ -140,23 +142,18 @@ def random_indices(indices,X_fold,z_fold):
     #Shuffle the index-vector from input raondomly
     np.random.shuffle(indices)
     #Obtain original Matrices
-    X_old = X_fold
-    z_old = z_fold
-    #Shuffle the dataset based on random indexes
-    for i in range(len(indices)):
-        X_fold[i][:] = X_old[indices[i]][:]
-        z_fold[i] = z_old[indices[i]]
+    X_fold = X_fold[indices]
+    z_fold = z_fold[indices]
     return X_fold,z_fold
 
-def k_fold(x,y,z,deg,folds,reg_type,Shuffle=True,*lamd):
+def k_fold(x,y,z,deg,folds,reg_type,shuffle=True,lamd=0):
     #create designermatrix
     x_deg = np.c_[x, y]
     poly = PolynomialFeatures(degree=deg)
     X_ = poly.fit_transform(x_deg)
-    #Split into k vectors
     indices = np.arange(len(z))
     #Shuffle the dataset randomly if chosen
-    if Shuffle:
+    if shuffle:
         X_shuffle,z_shuffle = random_indices(indices,X_,z)
         z = z_shuffle
         X_ = X_shuffle
@@ -170,9 +167,7 @@ def k_fold(x,y,z,deg,folds,reg_type,Shuffle=True,*lamd):
     z_fold = np.array_split(z,folds)
 
     #Initiate arrays
-    R2_train = []
     R2_tot = []
-    MSE_train = []
     MSE_tot = []
 
 
@@ -198,11 +193,10 @@ def k_fold(x,y,z,deg,folds,reg_type,Shuffle=True,*lamd):
             return 0
         #Create values based on training predictors
         z_pred = X_test@beta
-        z_train = X_train@beta
 
-        MSE_train = np.append(MSE_train,MSE(z_train, z_train))
         MSE_tot = np.append(MSE_tot,MSE(z_test, z_pred))
 
+        MSE_avg = np.average(MSE_tot)
 
-    return MSE_tot
+    return MSE_avg
 
