@@ -138,18 +138,32 @@ Initiate k-fold
 kfold1 = 5
 
 
-predictr_f = k_fold(x1d,y1d,z_true,Deg_max,kfold1,'Ridge',shuffle=False,lamd=lamd)
+#predictr_f = k_fold(x1d,y1d,z_true,20,kfold1,'Ridge',shuffle=False,lamd=lamd)
 
-predictr_t = k_fold(x1d,y1d,z_true,Deg_max,kfold1,'Ridge',shuffle=False,lamd=lamd)
+#predictr_t = k_fold(x1d,y1d,z_true,Deg_max,kfold1,'Ridge',lamd=lamd)
 
-predictr_of = k_fold(x1d,y1d,z_true,Deg_max,kfold1,'OLS',shuffle=False)
+#predictr_of = k_fold(x1d,y1d,z_true,Deg_max,kfold1,'OLS',shuffle=False)
 
-predictr_ot = k_fold(x1d,y1d,z_true,Deg_max,kfold1,'OLS')
 
-print("Predictor Matrix False",predictr_f)
+Degrees = np.array([2, 5, 10, 15, 20, 25,30,50])
+average_MSE_test = np.zeros(len(Degrees))
+average_MSE_train = np.zeros(len(Degrees))
+
+
+i = 0
+for deg in Degrees:
+
+
+    average_MSE_test[i], average_MSE_train[i] = k_fold(x1d,y1d,z_true,deg,kfold1,'OLS',shuffle=False)
+    i += 1
+
+
+"""print("Predictor Matrix False",predictr_f)
 print("Predictor Matrix True",predictr_t)
-print("Predictor Matrix OLS false",predictr_of)
-print("Predictor Matrix OLS true",predictr_ot)
+print("Predictor Matrix OLS false",predictr_of)"""
+
+print("Test error",average_MSE_test)
+print("Train error",average_MSE_train)
 
 """
 ------------------------------------------------------------------------------------
@@ -157,7 +171,7 @@ Test k-fold with sklearn
 ------------------------------------------------------------------------------------
 
 """
-
+"""
 
 k = 5
 kfold = KFold(n_splits = k,shuffle=True)
@@ -170,7 +184,7 @@ poly = PolynomialFeatures(degree=5)
 X_ = poly.fit_transform(x_deg)
 
 
-lmb = 0.0
+lmb = 0.5
 
 ridge = Ridge(alpha=lmb)
 
@@ -184,5 +198,5 @@ estimated_mse_sklearn2 = np.abs(estimated_mse_folds2)
 
 print("SK K-Fold True",np.average(estimated_mse_sklearn))
 print("SK K-Fold False",np.average(estimated_mse_sklearn2))
-
+"""
 
