@@ -4,12 +4,16 @@ from sklearn.linear_model import LinearRegression, Ridge, Lasso
 from sklearn.preprocessing import PolynomialFeatures
 from random import random, seed
 import scipy.linalg as scl
+from sklearn.model_selection import train_test_split
 
 np.set_printoptions(precision=4)
 
 def FrankeFunc(x, y, sigma, noise=False):
-    err = np.random.normal(0, sigma) * noise
-    print("Error", err)
+    err = [0] * len(x)
+    if noise:
+     for i in range(len(x)):
+      err[i] = np.random.normal(0, sigma)
+#    print("Error", err)
     term1 = 0.75 * np.exp(-(0.25 * (9 * x - 2) ** 2) - 0.25 * ((9 * y - 2) ** 2))
     term2 = 0.75 * np.exp(-((9 * x + 1) ** 2) / 49.0 - 0.1 * (9 * y + 1))
     term3 = 0.5 * np.exp(-(9 * x - 7) ** 2 / 4.0 - 0.25 * ((9 * y - 3) ** 2))
@@ -148,36 +152,40 @@ def random_indices(indices,X_fold,z_fold):
 
 def k_fold(x,y,z,deg,folds,reg_type,shuffle=True,lamd=0):
     #create designermatrix
+
     x_deg = np.c_[x, y]
+
     poly = PolynomialFeatures(degree=deg)
     X_ = poly.fit_transform(x_deg)
+#    if split:
+#        X_, X_val, z, z_val = train_test_split(X_,z,test_size =0.2)
     indices = np.arange(len(z))
     #Shuffle the dataset randomly if chosen
     if shuffle:
         X_shuffle,z_shuffle = random_indices(indices,X_,z)
         z = z_shuffle
         X_ = X_shuffle
-        print("True")
-    else:
-        print("False")
 
-    print("Zfold",np.matrix(X_[:][1].tolist()))
+#    print("Zfold",np.matrix(X_[:][1].tolist()))
     #Split data into k-folds
     X_fold = np.array_split(X_,folds)
     z_fold = np.array_split(z,folds)
 
     #Initiate arrays
     R2_tot = []
-    MSE_tot = []
-
-
+    MSE_test = []
+    MSE_train = []
+    bias = []
+    variance = []
     for i in range(folds):
+        X_fold_i = X_fold
+        z_fold_i = z_fold
         #take out test vars
         X_test = X_fold[i]
         z_test = z_fold[i]
         #delete row --> 0 from train set
-        X_train = np.delete(X_fold,i,0)
-        z_train = np.delete(z_fold,i,0)
+        X_train = np.delete(X_fold_i,i,0)
+        z_train = np.delete(z_fold_i,i,0)
         X_train = np.vstack(X_train)
         z_train = np.vstack(z_train)
         #Make z_train 1D
@@ -188,15 +196,33 @@ def k_fold(x,y,z,deg,folds,reg_type,shuffle=True,lamd=0):
 
         elif reg_type == 'Ridge':
             beta = Ridge_X(X_train,z_train,lamd)
+        elif reg_type == 'Lasso':
+            clf = Lasso(alpha=0.1)
+            clf.fit(X_train,z_train)
+            beta = clf.coef_
         else:
             print("Not a valid Regression model")
             return 0
         #Create values based on training predictors
         z_pred = X_test@beta
+        z_pred_train = X_train@beta
+        MSE_train = np.append(MSE_train, MSE(z_train, z_pred_train))
+        MSE_test = np.append(MSE_test,MSE(z_test, z_pred))
+        bias = np.append(bias, (z_test-np.mean(z_pred,keepdims=True)) ** 2)
+        variance = np.append(variance, np.var(z_pred,keepdims=True))
 
-        MSE_tot = np.append(MSE_tot,MSE(z_test, z_pred))
+    print('variance')
 
-        MSE_avg = np.average(MSE_tot)
+    print(variance)
+    print('MSE_test')
 
-    return MSE_avg
+    print(MSE_test)
+    print('bias')
+
+    print(bias)
+    MSE_test_avg = np.mean(MSE_test,keepdims=True)
+    MSE_train_avg = np.mean(MSE_train,keepdims=True)
+    bias_avg = np.mean(bias,keepdims=True)
+    variance_avg = np.mean(variance,keepdims=True)
+    return MSE_test_avg, MSE_train_avg, bias_avg, variance_avg
 

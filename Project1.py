@@ -6,13 +6,14 @@ from matplotlib.ticker import LinearLocator, FormatStrFormatter
 import numpy as np
 from random import seed
 from numpy.random import rand
-from functions import FrankeFunc, ols_svd, OLS_sk, ols_inv, pred_,pred_skl, Ridge_sk, MSE, R_2, OLS5_, pred5_, Ridge_x, Conf_i, k_fold
+from functions import FrankeFunc, ols_svd, OLS_sk, ols_inv, pred_,pred_skl, Ridge_sk, MSE, R_2, OLS5_, pred5_, Ridge_x, Conf_i, k_fold, ols_svd_X
 import pandas as pd
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import KFold
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.model_selection import cross_val_score
 from sklearn.linear_model import Ridge
+from sklearn.model_selection import train_test_split
 
 np.set_printoptions(precision=4)
 
@@ -46,28 +47,32 @@ y1d = y.ravel()
 
 
 #Obtain true function
-z = FrankeFunc(x_train,y_train,0.2,False)
+#z = FrankeFunc(x_train,y_train,0.5,False)
 #True function or train function
+#1D
+z_true = FrankeFunc(x1d,y1d,0.5,noise=True)
 
-z_true = FrankeFunc(x1d,y1d,0.2,False)
 
+'''
 print(z.shape)
 
 #Initiate betas
 X = X.ravel()
 Y = Y.ravel()
 
-beta1 = OLS_sk(X,Y,z,Deg_max)
+# beta1 = OLS_sk(X,Y,z,Deg_max) not used
 beta2 = ols_svd(x1d,y1d,z_true,Deg_max)
 beta3 = Ridge_x(x1d,y1d,z_true,lamd,Deg_max)
-beta4 = OLS5_(X,Y,z)
+# beta4 = OLS5_(X,Y,z) not used
 
 #Create predicxtors/fitted values
 
-z1_ = pred_skl(X,Y,beta1,Deg_max)
+#z1_ = pred_skl(X,Y,beta1,Deg_max) #Test
 z2_ = pred_(x1d,y1d,beta2,Deg_max)
 z3_ = pred_(x1d,y1d,beta3,Deg_max)
-z4_ = pred5_(X,Y,beta4)
+#z4_ = pred5_(X,Y,beta4) #not needed
+
+'''
 
 
 """
@@ -105,12 +110,14 @@ fig.colorbar(surf2, shrink=0.5, aspect=5)
 plt.show()
 """
 
-#Find Statistical Properties
-print("R2: ", R_2(z,z3_))
-print("MSE: ",MSE(z, z3_))
 
-print("R2: ", R_2(z,z2_))
-print("MSE: ",MSE(z, z2_))
+'''
+#Find Statistical Properties
+print("R2: ", R_2(z_true,z3_))
+print("MSE: ",MSE(z_true, z3_))
+
+print("R2: ", R_2(z_true,z2_))
+print("MSE: ",MSE(z_true, z2_))
 
 
 #
@@ -140,7 +147,7 @@ kfold1 = 5
 
 predictr_f = k_fold(x1d,y1d,z_true,Deg_max,kfold1,'Ridge',shuffle=False,lamd=lamd)
 
-predictr_t = k_fold(x1d,y1d,z_true,Deg_max,kfold1,'Ridge',shuffle=False,lamd=lamd)
+predictr_t = k_fold(x1d,y1d,z_true,Deg_max,kfold1,'Ridge',lamd=lamd)
 
 predictr_of = k_fold(x1d,y1d,z_true,Deg_max,kfold1,'OLS',shuffle=False)
 
@@ -185,4 +192,100 @@ estimated_mse_sklearn2 = np.abs(estimated_mse_folds2)
 print("SK K-Fold True",np.average(estimated_mse_sklearn))
 print("SK K-Fold False",np.average(estimated_mse_sklearn2))
 
+'''
 
+
+#C
+#degrees = [1, 3, 5, 10, 15]
+degrees = [1]
+
+MSE_test = [None] * len(degrees)
+MSE_train = [None] * len(degrees)
+bias = [None] * len(degrees)
+variance = [None] * len(degrees)
+i = 0
+for deg in degrees:
+    print('Polynomial:')
+    print(deg)
+    MSE_test[i],MSE_train[i],bias[i],variance[i] = k_fold(x1d,y1d,z_true,deg,5,'OLS',shuffle=True)
+
+    print('Error:', MSE_test[i])
+    print('Bias^2:', bias[i])
+    print('Var:', variance[i])
+    print('{} >= {} + {} = {}'.format(MSE_test[i], bias[i], variance[i], bias[i] + variance[i]))
+    i = i+1
+
+
+
+'''
+degrees = [1,2,4, 5, 6, 10, 15]
+i = 0
+MSE_test = [None] * len(degrees)
+MSE_train = [None] * len(degrees)
+x_deg = np.c_[x1d, y1d]
+for deg in degrees:
+    poly = PolynomialFeatures(degree=deg)
+    X_ = poly.fit_transform(x_deg)
+    X_train, X_test, z_train, z_test = train_test_split(X_, z_true, shuffle=True, test_size=0.2)
+    beta = ols_svd_X(X_train,z_train)
+    z_pred = X_test@beta
+    z_pred_train = X_train@beta
+
+    MSE_test[i] = MSE(z_test,z_pred)
+    MSE_train[i] = MSE(z_train,z_pred_train)
+    i = i+1
+print(MSE_test)
+print(MSE_train)
+
+#MSE_test = [0.023627402480447975, 0.001947726079861693, 9.563008799530615e-05, 5.51709066080293e-06 2.423663893175628e-07]
+#MSE_train = [0.02204046931212681, 0.001893659106094801, 8.586638895464984e-05, 5.417059451890584e-06 2.237914804468885e-07]
+
+#[0.023627402480447975, 0.0076237815693330655, 0.001902432258179857, 9.065887267684283e-05, 1.0734291011466178e-06]
+#[0.02204046931212681, 0.0072182664081734986, 0.0019064223899577426, 8.70357375672621e-05, 1.1218033142965828e-06]
+
+'''
+plt.figure(1)
+line_test, = plt.plot(degrees,MSE_test,label='TEST')
+line_train, = plt.plot(degrees,MSE_train,label='TRAINING')
+plt.legend(handles=[line_train,line_test])
+plt.show()
+
+plt.figure(2)
+line_bias, = plt.plot(degrees,bias,label='BIAS')
+line_var, = plt.plot(degrees,variance,label='VARIANCE')
+plt.legend(handles=[line_bias,line_var])
+plt.show()
+
+
+
+'''
+#Error_avg = [0.02236807748763603, 0.015159384007576104, 0.007315949223080988, 0.0034092598605627495, 0.0019129888406493483]
+Error_avg.append(k_fold(x1d,y1d,z_true,50,5,'OLS'))
+plt.plot(degrees,Error_avg)
+plt.show()
+'''
+'''
+#Recreation of figure..
+#Seps:
+#  1 find data
+# shuffle data
+#split data into trainig and test data
+#Datapoints
+n = 100
+x = np.arange(100)
+x = x/100
+x = np.shuffle(x)
+sigma = np.arrange(0,0.5,0.05)
+degrees = np.arrange(1,10,1)
+i = 0
+for s in sigma:
+    epsilon(i) = np.random.normal(0, s)
+    y[:,i] = x + epsilon(i)
+    x_train[:,i], x_test[:,i], y_train[:,i], y_test[:,i] = train_test_split(x, y[:,i], test_size=0.2)
+    i = i+1
+
+for deg in degrees
+    poly = PolynomialFeatures(degree=deg)
+    X_ = np.polyfit(x_train,y_train,deg)
+
+'''
