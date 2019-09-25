@@ -50,7 +50,7 @@ y1d = y.ravel()
 #z = FrankeFunc(x_train,y_train,0.5,False)
 #True function or train function
 #1D
-z_true = FrankeFunc(x1d,y1d,0.5,noise=True)
+z_true = FrankeFunc(x1d,y1d,0.2,noise=True)
 
 
 '''
@@ -193,12 +193,11 @@ print("SK K-Fold True",np.average(estimated_mse_sklearn))
 print("SK K-Fold False",np.average(estimated_mse_sklearn2))
 
 '''
-
+'''
 
 #C
 #degrees = [1, 3, 5, 10, 15]
-degrees = [1]
-
+degrees = [3]
 MSE_test = [None] * len(degrees)
 MSE_train = [None] * len(degrees)
 bias = [None] * len(degrees)
@@ -214,14 +213,16 @@ for deg in degrees:
     print('Var:', variance[i])
     print('{} >= {} + {} = {}'.format(MSE_test[i], bias[i], variance[i], bias[i] + variance[i]))
     i = i+1
-
-
-
 '''
-degrees = [1,2,4, 5, 6, 10, 15]
+
+
+
+degrees = [3]
 i = 0
 MSE_test = [None] * len(degrees)
 MSE_train = [None] * len(degrees)
+bias = [None] * len(degrees)
+variance = [None] * len(degrees)
 x_deg = np.c_[x1d, y1d]
 for deg in degrees:
     poly = PolynomialFeatures(degree=deg)
@@ -230,12 +231,17 @@ for deg in degrees:
     beta = ols_svd_X(X_train,z_train)
     z_pred = X_test@beta
     z_pred_train = X_train@beta
+    bias[i] = np.mean((z_test - np.mean(z_pred)) ** 2)
+    variance[i] = np.mean(np.var(z_pred))
 
     MSE_test[i] = MSE(z_test,z_pred)
     MSE_train[i] = MSE(z_train,z_pred_train)
     i = i+1
-print(MSE_test)
-print(MSE_train)
+
+print('Error:', MSE_test[i-1])
+print('Bias^2:', bias[i-1])
+print('Var:', variance[i-1])
+print('{} >= {} + {} = {}'.format(MSE_test[i-1], bias[i-1], variance[i-1], bias[i-1] + variance[i-1]))
 
 #MSE_test = [0.023627402480447975, 0.001947726079861693, 9.563008799530615e-05, 5.51709066080293e-06 2.423663893175628e-07]
 #MSE_train = [0.02204046931212681, 0.001893659106094801, 8.586638895464984e-05, 5.417059451890584e-06 2.237914804468885e-07]
@@ -243,7 +249,7 @@ print(MSE_train)
 #[0.023627402480447975, 0.0076237815693330655, 0.001902432258179857, 9.065887267684283e-05, 1.0734291011466178e-06]
 #[0.02204046931212681, 0.0072182664081734986, 0.0019064223899577426, 8.70357375672621e-05, 1.1218033142965828e-06]
 
-'''
+
 plt.figure(1)
 line_test, = plt.plot(degrees,MSE_test,label='TEST')
 line_train, = plt.plot(degrees,MSE_train,label='TRAINING')

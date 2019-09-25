@@ -173,19 +173,19 @@ def k_fold(x,y,z,deg,folds,reg_type,shuffle=True,lamd=0):
 
     #Initiate arrays
     R2_tot = []
-    MSE_test = []
-    MSE_train = []
-    bias = []
-    variance = []
+    MSE_test = [None] * folds
+    MSE_train = [None] * folds
+    bias = [None] * folds
+    variance = [None] * folds
     for i in range(folds):
-        X_fold_i = X_fold
-        z_fold_i = z_fold
+        #X_fold_i = X_fold
+        #z_fold_i = z_fold
         #take out test vars
         X_test = X_fold[i]
         z_test = z_fold[i]
         #delete row --> 0 from train set
-        X_train = np.delete(X_fold_i,i,0)
-        z_train = np.delete(z_fold_i,i,0)
+        X_train = np.delete(X_fold,i,0)
+        z_train = np.delete(z_fold,i,0)
         X_train = np.vstack(X_train)
         z_train = np.vstack(z_train)
         #Make z_train 1D
@@ -193,7 +193,6 @@ def k_fold(x,y,z,deg,folds,reg_type,shuffle=True,lamd=0):
         #Choose Model type
         if reg_type == 'OLS':
             beta = ols_svd_X(X_train,z_train)
-
         elif reg_type == 'Ridge':
             beta = Ridge_X(X_train,z_train,lamd)
         elif reg_type == 'Lasso':
@@ -206,23 +205,27 @@ def k_fold(x,y,z,deg,folds,reg_type,shuffle=True,lamd=0):
         #Create values based on training predictors
         z_pred = X_test@beta
         z_pred_train = X_train@beta
-        MSE_train = np.append(MSE_train, MSE(z_train, z_pred_train))
-        MSE_test = np.append(MSE_test,MSE(z_test, z_pred))
-        bias = np.append(bias, (z_test-np.mean(z_pred,keepdims=True)) ** 2)
-        variance = np.append(variance, np.var(z_pred,keepdims=True))
+        print(MSE_train)
+        print(MSE_test)
+        print(bias)
+        #MSE_train = np.append(MSE_train, MSE(z_train, z_pred_train))
+        #MSE_test = np.append(MSE_test, MSE(z_test, z_pred))
+        #bias = np.append(bias, np.mean((z_test - np.mean(z_train))**2))
+        #variance = np.append(variance, np.var(z_pred))
+        MSE_train[i] = MSE(z_train, z_pred_train)
+        MSE_test[i] = np.mean((z_test - z_pred)**2)
+        bias[i] = (z_test - np.mean(z_pred, axis=1, keepdims=True))**2
+        variance[i] = np.var(z_pred, axis=1, keepdims=True)
 
     print('variance')
-
     print(variance)
     print('MSE_test')
-
     print(MSE_test)
     print('bias')
-
     print(bias)
-    MSE_test_avg = np.mean(MSE_test,keepdims=True)
-    MSE_train_avg = np.mean(MSE_train,keepdims=True)
-    bias_avg = np.mean(bias,keepdims=True)
-    variance_avg = np.mean(variance,keepdims=True)
+    MSE_test_avg = np.average(MSE_test)
+    MSE_train_avg = np.average(MSE_train)
+    bias_avg = np.average(bias)
+    variance_avg = np.average(variance)
     return MSE_test_avg, MSE_train_avg, bias_avg, variance_avg
 
