@@ -8,17 +8,14 @@ from sklearn.model_selection import train_test_split
 
 np.set_printoptions(precision=4)
 
-def FrankeFunc(x, y, sigma, noise=False):
-    err = [0] * len(x)
-    if noise:
-     for i in range(len(x)):
-      err[i] = np.random.normal(0, sigma)
+def FrankeFunc(x, y):
+
 #    print("Error", err)
     term1 = 0.75 * np.exp(-(0.25 * (9 * x - 2) ** 2) - 0.25 * ((9 * y - 2) ** 2))
     term2 = 0.75 * np.exp(-((9 * x + 1) ** 2) / 49.0 - 0.1 * (9 * y + 1))
     term3 = 0.5 * np.exp(-(9 * x - 7) ** 2 / 4.0 - 0.25 * ((9 * y - 3) ** 2))
     term4 = -0.2 * np.exp(-(9 * x - 4) ** 2 - (9 * y - 7) ** 2)
-    return term1 + term2 + term3 + term4 + err
+    return term1 + term2 + term3 + term4
 
 
 
@@ -205,24 +202,15 @@ def k_fold(x,y,z,deg,folds,reg_type,shuffle=True,lamd=0):
         #Create values based on training predictors
         z_pred = X_test@beta
         z_pred_train = X_train@beta
-        print(MSE_train)
-        print(MSE_test)
-        print(bias)
         #MSE_train = np.append(MSE_train, MSE(z_train, z_pred_train))
         #MSE_test = np.append(MSE_test, MSE(z_test, z_pred))
         #bias = np.append(bias, np.mean((z_test - np.mean(z_train))**2))
         #variance = np.append(variance, np.var(z_pred))
         MSE_train[i] = MSE(z_train, z_pred_train)
         MSE_test[i] = np.mean((z_test - z_pred)**2)
-        bias[i] = (z_test - np.mean(z_pred, axis=1, keepdims=True))**2
-        variance[i] = np.var(z_pred, axis=1, keepdims=True)
+        bias[i] = (z_test - np.mean(z_pred))**2
+        variance[i] = np.var(z_pred)
 
-    print('variance')
-    print(variance)
-    print('MSE_test')
-    print(MSE_test)
-    print('bias')
-    print(bias)
     MSE_test_avg = np.average(MSE_test)
     MSE_train_avg = np.average(MSE_train)
     bias_avg = np.average(bias)

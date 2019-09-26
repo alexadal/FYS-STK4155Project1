@@ -19,38 +19,44 @@ np.set_printoptions(precision=4)
 
 #Datapoints - how many & DegreeMax
 
-D = 100
+D = 2000
 Deg_max = 5
 lamd = 0.0
 # Make data grid give same shape as x in exercise
 np.random.seed(10)
 
-x1 = np.random.rand(D,1)
-y1 = np.random.rand(D,1)
+x1d = np.random.rand(D,1)
+y1d = np.random.rand(D,1)
 
-print(x1.shape)
 
 #Sort before printing
-X = np.sort(x1,axis=0)
-Y = np.sort(y1,axis=0)
+#X = np.sort(x1,axis=0)
+#Y = np.sort(y1,axis=0)
 #Create meshgrid for plotting
-x_train,y_train = np.meshgrid(X, Y)
+#x_train,y_train = np.meshgrid(X, Y)
 
-x, y = np.meshgrid(X,Y)
+#x, y = np.meshgrid(X,Y)
 
 #x1d = x.reshape((D**2, 1))
 #y1d = y.reshape((D**2, 1))
 
 #Create 1d arrays
-x1d = x.ravel()
-y1d = y.ravel()
-
+#x1d = x.ravel()
+#y1d = y.ravel()
 
 #Obtain true function
 #z = FrankeFunc(x_train,y_train,0.5,False)
 #True function or train function
 #1D
-z_true = FrankeFunc(x1d,y1d,0.2,noise=True)
+sigma = 0.5
+z_true = np.zeros((D,1))
+err = [0]*D
+for i in range(D):
+ err[i] = np.random.normal(0, sigma)
+
+ z_true[i,0] = FrankeFunc(x1d[i,0],y1d[i,0]) + err[i]
+
+#print(1-np.mean(err)/np.mean(z_true))
 
 
 '''
@@ -193,11 +199,11 @@ print("SK K-Fold True",np.average(estimated_mse_sklearn))
 print("SK K-Fold False",np.average(estimated_mse_sklearn2))
 
 '''
-'''
+
 
 #C
-#degrees = [1, 3, 5, 10, 15]
-degrees = [3]
+degrees = [0,1,3,5,10,15,20]
+#degrees = [3]
 MSE_test = [None] * len(degrees)
 MSE_train = [None] * len(degrees)
 bias = [None] * len(degrees)
@@ -205,7 +211,6 @@ variance = [None] * len(degrees)
 i = 0
 for deg in degrees:
     print('Polynomial:')
-    print(deg)
     MSE_test[i],MSE_train[i],bias[i],variance[i] = k_fold(x1d,y1d,z_true,deg,5,'OLS',shuffle=True)
 
     print('Error:', MSE_test[i])
@@ -213,10 +218,10 @@ for deg in degrees:
     print('Var:', variance[i])
     print('{} >= {} + {} = {}'.format(MSE_test[i], bias[i], variance[i], bias[i] + variance[i]))
     i = i+1
+
+
+
 '''
-
-
-
 degrees = [3]
 i = 0
 MSE_test = [None] * len(degrees)
@@ -249,7 +254,7 @@ print('{} >= {} + {} = {}'.format(MSE_test[i-1], bias[i-1], variance[i-1], bias[
 #[0.023627402480447975, 0.0076237815693330655, 0.001902432258179857, 9.065887267684283e-05, 1.0734291011466178e-06]
 #[0.02204046931212681, 0.0072182664081734986, 0.0019064223899577426, 8.70357375672621e-05, 1.1218033142965828e-06]
 
-
+'''
 plt.figure(1)
 line_test, = plt.plot(degrees,MSE_test,label='TEST')
 line_train, = plt.plot(degrees,MSE_train,label='TRAINING')
@@ -259,7 +264,8 @@ plt.show()
 plt.figure(2)
 line_bias, = plt.plot(degrees,bias,label='BIAS')
 line_var, = plt.plot(degrees,variance,label='VARIANCE')
-plt.legend(handles=[line_bias,line_var])
+line_test, = plt.plot(degrees,MSE_test,label='TEST')
+plt.legend(handles=[line_bias,line_var,line_test])
 plt.show()
 
 
