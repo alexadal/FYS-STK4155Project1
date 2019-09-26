@@ -207,12 +207,14 @@ def k_fold(x,y,z,deg,folds,reg_type,shuffle=True,lamd=0):
         #bias = np.append(bias, np.mean((z_test - np.mean(z_train))**2))
         #variance = np.append(variance, np.var(z_pred))
         MSE_train[i] = MSE(z_train, z_pred_train)
-        MSE_test[i] = np.mean((z_test - z_pred)**2)
-        bias[i] = (z_test - np.mean(z_pred))**2
+#        MSE_test[i] = np.mean((z_test - z_pred)**2)
+        MSE_test[i]= MSE(z_test, z_pred)
+        bias[i] = np.mean((z_test - np.mean(z_pred))**2)
         variance[i] = np.var(z_pred)
-
     MSE_test_avg = np.average(MSE_test)
     MSE_train_avg = np.average(MSE_train)
+    print('bias')
+    print(bias)
     bias_avg = np.average(bias)
     variance_avg = np.average(variance)
     return MSE_test_avg, MSE_train_avg, bias_avg, variance_avg

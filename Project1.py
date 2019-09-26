@@ -211,7 +211,7 @@ variance = [None] * len(degrees)
 i = 0
 for deg in degrees:
     print('Polynomial:')
-    MSE_test[i],MSE_train[i],bias[i],variance[i] = k_fold(x1d,y1d,z_true,deg,5,'OLS',shuffle=True)
+    MSE_test[i],MSE_train[i],bias[i],variance[i] = k_fold(x1d,y1d,z_true,deg,5,'OLS',shuffle=False)
 
     print('Error:', MSE_test[i])
     print('Bias^2:', bias[i])
