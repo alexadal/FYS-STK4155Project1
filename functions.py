@@ -5,17 +5,17 @@ from sklearn.preprocessing import PolynomialFeatures
 from random import random, seed
 import scipy.linalg as scl
 from sklearn.model_selection import train_test_split
+from sklearn.model_selection import KFold
+from sklearn.utils import resample
 
 np.set_printoptions(precision=4)
 
-def FrankeFunc(x, y, sigma, noise=False):
-    err = np.random.normal(0, sigma) * noise
-    print("Error", err)
+def FrankeFunc(x, y):
     term1 = 0.75 * np.exp(-(0.25 * (9 * x - 2) ** 2) - 0.25 * ((9 * y - 2) ** 2))
     term2 = 0.75 * np.exp(-((9 * x + 1) ** 2) / 49.0 - 0.1 * (9 * y + 1))
     term3 = 0.5 * np.exp(-(9 * x - 7) ** 2 / 4.0 - 0.25 * ((9 * y - 3) ** 2))
     term4 = -0.2 * np.exp(-(9 * x - 4) ** 2 - (9 * y - 7) ** 2)
-    return term1 + term2 + term3 + term4 + err
+    return term1 + term2 + term3 + term4
 
 
 
@@ -147,16 +147,15 @@ def random_indices(indices,X_fold,z_fold):
     z_fold = z_fold[indices]
     return X_fold,z_fold
 
-def k_fold(x,y,z,deg,folds,reg_type,shuffle=True,split=True,lamd=0):
+def k_fold1(x,y,z,deg,folds,reg_type,shuffle=True,lamd=0):
     #create designermatrix
+    p = int(0.5 * (deg + 2) * (deg+ 1))
     x_deg = np.c_[x, y]
     poly = PolynomialFeatures(degree=deg)
     X_t = poly.fit_transform(x_deg)
     z_t = z
-    if split:
-        X_ex, X_t, z_ex, z_t = train_test_split(X_t,z_t,test_size=0.2,shuffle=True)
-        #indices = np.arange(len(z_t))
-    #Shuffle the dataset randomly if chosen
+    print(X_t.shape)
+
     if shuffle:
         indices = np.arange(len(z_t))
         X_t, z_t = random_indices(indices,X_t,z_t)
@@ -175,6 +174,10 @@ def k_fold(x,y,z,deg,folds,reg_type,shuffle=True,split=True,lamd=0):
     MSE_train = []
     MSE_tot_avg = []
     MSE_train_avg = []
+    bias = []
+    variance = []
+    beta_avg = []
+    betas = np.zeros((deg,p))
 
     for i in range(folds):
         X_train_i = X_fold
@@ -199,14 +202,175 @@ def k_fold(x,y,z,deg,folds,reg_type,shuffle=True,split=True,lamd=0):
             print("Not a valid Regression model")
             return 0
         #Create values based on training predictors
-        z_pred = X_ex@beta
+        z_pred = X_test@beta
         z_train_pred = X_train@beta
 
-        MSE_tot = np.append(MSE_tot,MSE(z_ex, z_pred))
+        MSE_tot = np.append(MSE_tot,MSE(z_test, z_pred))
         MSE_train = np.append(MSE_train, MSE(z_train, z_train_pred))
+        bias = np.append(bias, np.mean((z_test - np.mean(z_pred)) ** 2))
+        variance = np.append(variance, np.var(z_pred))
+        betas = np.append(betas,beta)
+        print("Betas",betas.shape)
+    bias_avg = np.average(bias)
+    variance_avg = np.average(variance)
+    MSE_tot_avg = np.average(MSE_tot)
+    MSE_train_avg = np.average(MSE_train)
+    beta_avg = np.mean(betas,axis=0,keepdims=True)
+    print("Beta_avg",beta_avg)
 
-        MSE_tot_avg = np.average(MSE_tot)
-        MSE_train_avg = np.average(MSE_train)
+    return MSE_tot_avg, MSE_train_avg, bias_avg, variance_avg,beta
 
-    return MSE_tot_avg, MSE_train_avg
 
+def k_fold2(x,y,z,deg,folds,reg_type,lamd=0):
+    #p = int(0.5 * (deg + 2) * (deg + 1))
+    kf = KFold(folds,True,5)
+
+
+
+    #Initiate arrays
+    R2_tot = []
+    MSE_tot = []
+    MSE_train = []
+    MSE_tot_avg = []
+    MSE_train_avg = []
+    bias = []
+    variance = []
+    #betas = np.zeros((deg,p))
+    betas = []
+
+    i = 0
+    for train_inds,test_inds in kf.split(x):
+        xtrain = x[train_inds]
+        ytrain = y[train_inds]
+        ztrain = z[train_inds]
+
+
+        xtest = x[test_inds]
+        ytest = y[test_inds]
+        ztest = z[test_inds]
+
+
+        #Make z_train 1D
+        ztrain = ztrain.ravel()
+        x_ = np.c_[xtrain,ytrain]
+        poly = PolynomialFeatures(degree=deg)
+        X_train = poly.fit_transform(x_)
+
+        #Choose Model type
+        if reg_type == 'OLS':
+            beta = ols_svd_X(X_train,ztrain)
+
+        elif reg_type == 'Ridge':
+            beta = Ridge_X(X_train,ztrain,lamd)
+        else:
+            print("Not a valid Regression model")
+            return 0
+
+        x_t = np.c_[xtest, ytest]
+        poly = PolynomialFeatures(degree=deg)
+        X_test = poly.fit_transform(x_t)
+        #Create values based on training predictors
+        z_pred = X_test@beta
+        z_train_pred = X_train@beta
+
+        MSE_tot = np.append(MSE_tot,MSE(ztest, z_pred))
+        MSE_train = np.append(MSE_train, MSE(ztrain, z_train_pred))
+        bias = np.append(bias, np.mean((ztest - np.mean(z_pred)) ** 2))
+        variance = np.append(variance, np.var(z_pred))
+        betas = np.append(betas,beta)
+
+    bias_avg = np.average(bias)
+    variance_avg = np.average(variance)
+    MSE_tot_avg = np.average(MSE_tot)
+    MSE_train_avg = np.average(MSE_train)
+
+    return MSE_tot_avg, MSE_train_avg, bias_avg, variance_avg,betas
+
+def BV(x,y,z,deg,folds,reg_type,lamb = 0):
+
+
+    xt, x_test, yt, y_test, zt, z_test = train_test_split(x, y, z, test_size=0.2,shuffle=True)
+    MSE_te,MSE_tr,bias,variance,betas = k_fold1(xt,yt,zt,deg,folds,reg_type)
+
+    x_bv = np.c_[x_test, y_test]
+    poly = PolynomialFeatures(degree=deg)
+    X_bv_test = poly.fit_transform(x_bv)
+
+    """
+    x_bv_tr = np.c_[xt, yt]
+    poly = PolynomialFeatures(degree=deg)
+    X_bv_tr = poly.fit_transform(x_bv_tr)
+    print(X_bv_test.shape)
+    """
+
+    print("Beta",betas)
+
+
+
+    z_pred = X_bv_test@betas
+
+#    print(z_bv_pred.shape)
+ #   print(z_test.shape)
+
+
+    MSE_test = np.mean(np.mean((z_test - z_pred) ** 2))
+    bias_test = np.mean((z_test - np.mean(z_pred)) ** 2)
+    variance_test = np.mean(np.var(z_pred))
+
+    return MSE_test, bias_test, variance_test
+
+
+def bootstrap(x,y,z,deg,reg_type,n_bootstraps,lambd=0):
+
+    x_train, x_test, y_train, y_test, z_train, z_test = train_test_split(x, y, z, test_size=0.2)
+    z_test = z_test.reshape(z_test.shape[0],1)
+
+    poly = PolynomialFeatures(degree=deg)
+    x_tst = np.c_[x_test,y_test]
+    X_tst = poly.fit_transform(x_tst)
+
+    print("z_test", z_test.shape)
+
+    print("Straps",n_bootstraps)
+
+    z_pred = np.empty((z_test.shape[0], n_bootstraps))
+    z_pred_train = np.empty((z_train.shape[0], n_bootstraps))
+    z_t =  np.empty((z_train.shape[0], n_bootstraps))
+    print("Straps", z_pred.shape)
+    err = []
+    bi = []
+    vari = []
+    MSE_train = []
+    for i in range(n_bootstraps):
+
+        x_, y_, z_ = resample(x_train, y_train,z_train)
+        # Choose Model type
+        x_bot = np.c_[x_,y_]
+        X_train = poly.fit_transform(x_bot)
+        if reg_type == 'OLS':
+            beta = ols_svd_X(X_train, z_)
+
+        elif reg_type == 'Ridge':
+            beta = Ridge_X(X_train, z_, lambd)
+        else:
+            print("Not a valid Regression model")
+            return 0
+
+        # Evaluate the new model on the same test data each time.
+        z_pred[:, i] = X_tst@beta.ravel()
+        z_pred_train[:, i] = X_train @ beta.ravel()
+        z_t[:, i] = z_
+
+    error = np.mean(np.mean((z_test - z_pred) ** 2, axis=1, keepdims=True))
+    bias = np.mean((z_test - np.mean(z_pred, axis=1, keepdims=True)) ** 2)
+    variance = np.mean(np.var(z_pred, axis=1, keepdims=True))
+    z_train = z_train.reshape(z_train.shape[0], 1)
+    MSE_t= np.mean(np.mean((z_t - z_pred_train) ** 2, axis=1, keepdims=True))
+    err.append(error)
+    bi.append(bias)
+    vari.append(variance)
+    MSE_train.append(MSE_t)
+    print(MSE_train)
+    print(err)
+    print(bi)
+    return error, MSE_t, bias, variance

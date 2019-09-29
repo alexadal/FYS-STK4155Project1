@@ -6,7 +6,7 @@ from matplotlib.ticker import LinearLocator, FormatStrFormatter
 import numpy as np
 from random import seed
 from numpy.random import rand
-from functions import FrankeFunc, ols_svd, OLS_sk, ols_inv, pred_,pred_skl, Ridge_sk, MSE, R_2, OLS5_, pred5_, Ridge_x, Conf_i, k_fold
+from functions import FrankeFunc, ols_svd, OLS_sk, ols_inv, pred_,pred_skl, Ridge_sk, MSE, R_2, OLS5_, pred5_, Ridge_x, Conf_i, k_fold1,BV, k_fold2,bootstrap
 import pandas as pd
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import KFold
@@ -18,7 +18,7 @@ np.set_printoptions(precision=4)
 
 #Datapoints - how many & DegreeMax
 
-D = 100
+D = 70
 Deg_max = 5
 lamd = 0.0
 # Make data grid give same shape as x in exercise
@@ -27,6 +27,8 @@ np.random.seed(10)
 x1 = np.random.rand(D,1)
 y1 = np.random.rand(D,1)
 
+x1 = x1.ravel()
+y1 = y1.ravel()
 print(x1.shape)
 
 #Sort before printing
@@ -46,16 +48,21 @@ y1d = y.ravel()
 
 
 #Obtain true function
-z = FrankeFunc(x_train,y_train,0.2,False)
+z = FrankeFunc(x_train,y_train)
 #True function or train function
+sigma = 0.5
+error = np.random.normal(0,sigma,D**2)
 
-z_true = FrankeFunc(x1d,y1d,0.2,False)
+print("error",error)
+z_true = FrankeFunc(x1d,y1d).ravel()+error
 
-print(z.shape)
+print(z_true.shape)
 
 #Initiate betas
 X = X.ravel()
 Y = Y.ravel()
+
+"""
 
 beta1 = OLS_sk(X,Y,z,Deg_max)
 beta2 = ols_svd(x1d,y1d,z_true,Deg_max)
@@ -69,6 +76,8 @@ z2_ = pred_(x1d,y1d,beta2,Deg_max)
 z3_ = pred_(x1d,y1d,beta3,Deg_max)
 z4_ = pred5_(X,Y,beta4)
 
+
+"""
 
 """
 ------------------------------------------------------------------------------------
@@ -105,6 +114,8 @@ fig.colorbar(surf2, shrink=0.5, aspect=5)
 plt.show()
 """
 
+"""
+
 #Find Statistical Properties
 print("R2: ", R_2(z,z3_))
 print("MSE: ",MSE(z, z3_))
@@ -123,7 +134,7 @@ C_i_ridge = Conf_i(z_true,z3_,x1d,y1d,beta3,Deg_max)
 
 print("Confidence Intervals Ridge",C_i_ridge)
 
-
+"""
 
 
 
@@ -140,21 +151,44 @@ kfold1 = 5
 
 #predictr_f = k_fold(x1d,y1d,z_true,20,kfold1,'Ridge',shuffle=False,lamd=lamd)
 
-#predictr_t = k_fold(x1d,y1d,z_true,Deg_max,kfold1,'Ridge',lamd=lamd)
+#predictr_t = k_fo5ld(x1d,y1d,z_true,Deg_max,kfold1,'Ridge',lamd=lamd)
 
 #predictr_of = k_fold(x1d,y1d,z_true,Deg_max,kfold1,'OLS',shuffle=False)
 
 
-Degrees = np.array([2, 5, 10, 15, 20, 25,30,50])
+Degrees = np.array([0,2, 5, 10, 12,15])
 average_MSE_test = np.zeros(len(Degrees))
 average_MSE_train = np.zeros(len(Degrees))
+variance_avg= np.zeros(len(Degrees))
+bias_avg= np.zeros(len(Degrees))
+betas = np.zeros((len(Degrees)))
 
+average_MSE_test2 = np.zeros(len(Degrees))
+average_MSE_train2 = np.zeros(len(Degrees))
+variance_avg2= np.zeros(len(Degrees))
+bias_avg2= np.zeros(len(Degrees))
+betas2 = np.zeros((len(Degrees)))
+
+
+MSE_test = np.zeros(len(Degrees))
+variance= np.zeros(len(Degrees))
+bias= np.zeros(len(Degrees))
 
 i = 0
 for deg in Degrees:
 
 
-    average_MSE_test[i], average_MSE_train[i] = k_fold(x1d,y1d,z_true,deg,kfold1,'OLS',shuffle=False)
+    average_MSE_test[i], average_MSE_train[i], bias_avg[i], variance_avg[i],beta = k_fold1(x1d,y1d,z_true,deg,kfold1,'OLS',shuffle=True)
+    #average_MSE_test2[i], average_MSE_train2[i], bias_avg2[i], variance_avg2[i], beta2 = k_fold2(x1d, y1d, z_true, deg, kfold1, 'OLS')
+    average_MSE_test2[i], average_MSE_train2[i], bias_avg2[i], variance_avg2[i] = bootstrap(x1d, y1d, z_true, deg,'OLS',20)
+
+
+    MSE_test[i],bias[i],variance[i] = BV(x1d,y1d,z_true,deg,kfold1,'OLS')
+    print('Error:', average_MSE_test2[i])
+    print('Bias^2:', bias_avg2[i])
+    print('Var:', variance_avg2[i])
+    print('{} >= {} + {} = {}'.format(average_MSE_test2[i], bias_avg2[i], variance_avg2[i], bias_avg2[i] + variance_avg2[i]))
+
     i += 1
 
 
@@ -164,6 +198,8 @@ print("Predictor Matrix OLS false",predictr_of)"""
 
 print("Test error",average_MSE_test)
 print("Train error",average_MSE_train)
+print("Test error",average_MSE_test2)
+print("Train error",average_MSE_train2)
 
 """
 ------------------------------------------------------------------------------------
@@ -200,3 +236,25 @@ print("SK K-Fold True",np.average(estimated_mse_sklearn))
 print("SK K-Fold False",np.average(estimated_mse_sklearn2))
 """
 
+plt.figure(1)
+line_test, = plt.plot(Degrees,average_MSE_test,label='TEST')
+line_train, = plt.plot(Degrees,average_MSE_train,label='TRAINING')
+line_test1, = plt.plot(Degrees,average_MSE_test2,label='TEST2')
+line_train1, = plt.plot(Degrees,average_MSE_train2,label='TRAINING2')
+plt.legend(handles=[line_train,line_test,line_test1,line_train1])
+plt.show()
+
+
+summ = []
+sigmavec = np.full(len(Degrees),0)
+print(sigmavec)
+plt.figure(2)
+line_bias, = plt.plot(Degrees,bias_avg2,label='BIAS')
+line_var, = plt.plot(Degrees,variance_avg2,label='VARIANCE')
+line_test, = plt.plot(Degrees,average_MSE_test2,label='TEST')
+
+summ =variance_avg2+bias_avg2+sigmavec
+dot_bi_var, = plt.plot(Degrees,summ,'ro',label='sum')
+
+plt.legend(handles=[line_bias,line_var,line_test,dot_bi_var])
+plt.show()
