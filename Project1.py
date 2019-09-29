@@ -18,7 +18,7 @@ np.set_printoptions(precision=4)
 
 #Datapoints - how many & DegreeMax
 
-D = 70
+D = 60
 Deg_max = 5
 lamd = 0.0
 # Make data grid give same shape as x in exercise
@@ -50,7 +50,7 @@ y1d = y.ravel()
 #Obtain true function
 z = FrankeFunc(x_train,y_train)
 #True function or train function
-sigma = 0.5
+sigma = 0.9
 error = np.random.normal(0,sigma,D**2)
 
 print("error",error)
@@ -156,7 +156,7 @@ kfold1 = 5
 #predictr_of = k_fold(x1d,y1d,z_true,Deg_max,kfold1,'OLS',shuffle=False)
 
 
-Degrees = np.array([0,2, 5, 10, 12,15])
+Degrees = np.array([0,2, 5, 10, 12,15,20,25,35,60])
 average_MSE_test = np.zeros(len(Degrees))
 average_MSE_train = np.zeros(len(Degrees))
 variance_avg= np.zeros(len(Degrees))
@@ -178,9 +178,9 @@ i = 0
 for deg in Degrees:
 
 
-    average_MSE_test[i], average_MSE_train[i], bias_avg[i], variance_avg[i],beta = k_fold1(x1d,y1d,z_true,deg,kfold1,'OLS',shuffle=True)
+    average_MSE_test[i], average_MSE_train[i], bias_avg[i], variance_avg[i] = k_fold1(x1d,y1d,z_true,deg,kfold1,'OLS',shuffle=True)
     #average_MSE_test2[i], average_MSE_train2[i], bias_avg2[i], variance_avg2[i], beta2 = k_fold2(x1d, y1d, z_true, deg, kfold1, 'OLS')
-    average_MSE_test2[i], average_MSE_train2[i], bias_avg2[i], variance_avg2[i] = bootstrap(x1d, y1d, z_true, deg,'OLS',20)
+    average_MSE_test2[i], average_MSE_train2[i], bias_avg2[i], variance_avg2[i] = bootstrap(x1d, y1d, z_true, deg,'OLS',1)
 
 
     MSE_test[i],bias[i],variance[i] = BV(x1d,y1d,z_true,deg,kfold1,'OLS')
@@ -249,11 +249,11 @@ summ = []
 sigmavec = np.full(len(Degrees),0)
 print(sigmavec)
 plt.figure(2)
-line_bias, = plt.plot(Degrees,bias_avg2,label='BIAS')
-line_var, = plt.plot(Degrees,variance_avg2,label='VARIANCE')
-line_test, = plt.plot(Degrees,average_MSE_test2,label='TEST')
+line_bias, = plt.plot(Degrees,bias,label='BIAS')
+line_var, = plt.plot(Degrees,variance,label='VARIANCE')
+line_test, = plt.plot(Degrees,MSE_test,label='TEST')
 
-summ =variance_avg2+bias_avg2+sigmavec
+summ =variance+bias+sigmavec
 dot_bi_var, = plt.plot(Degrees,summ,'ro',label='sum')
 
 plt.legend(handles=[line_bias,line_var,line_test,dot_bi_var])
