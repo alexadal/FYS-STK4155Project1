@@ -52,6 +52,11 @@ def OLS_sk(x, y, z, deg):
     clf = LinearRegression()
     return clf.fit(X_, z)
 
+def OLS_sk_X(X, z):
+    clf = LinearRegression(fit_intercept=False)
+    clf.fit(X, z)
+    return clf.coef_
+
 def OLS5_(x, y, z):
     x_deg = DesignMatrix5(x, y)
     u, s, v = scl.svd(x_deg)
@@ -61,8 +66,21 @@ def Ridge_sk(x, y, z, lamd, deg):
     x_deg = np.c_[x, y]
     poly = PolynomialFeatures(degree=deg)
     X_ = poly.fit_transform(x_deg)
-    return Ridge(alpha=lamd).fit(X_, z)
+    clf = Ridge(alpha=lamd)
 
+    clf.fit(X_, z)
+    return clf.coef_
+
+def Ridge_sk_X(X,z,lamd):
+    clf = Ridge(alpha=lamd)
+    clf.fit(X, z)
+    return clf.coef_
+
+def Ridge_X2(X,z,lamd):
+    n, m = X.shape
+    I = np.identity(m)
+    w = np.dot(np.dot(np.linalg.inv(np.dot(X.T, X) + lamd * I), X.T), z)
+    return w
 
 def Ridge_x(x, y, z, lamd, deg):
     x_deg = np.c_[x, y]
@@ -147,9 +165,9 @@ def random_indices(indices,X_fold,z_fold):
     z_fold = z_fold[indices]
     return X_fold,z_fold
 
-def k_fold1(x,y,z,deg,folds,reg_type,shuffle=True,lamd=0):
+def k_fold1(x,y,z,deg,folds,reg_type,shuffle=True,lamb=0.1,beta_out = False):
     #create designermatrix
-    p = int(0.5 * (deg + 2) * (deg+ 1))
+    p = int(0.5 * (deg + 2) * (deg+ 1))-1
     x_deg = np.c_[x, y]
     poly = PolynomialFeatures(degree=deg)
     X_t = poly.fit_transform(x_deg)
@@ -178,7 +196,6 @@ def k_fold1(x,y,z,deg,folds,reg_type,shuffle=True,lamd=0):
     variance = []
     beta_avg = []
     betas = np.zeros((deg,p))
-
     for i in range(folds):
         X_train_i = X_fold
         z_train_i = z_fold
@@ -194,34 +211,54 @@ def k_fold1(x,y,z,deg,folds,reg_type,shuffle=True,lamd=0):
         z_train = z_train.ravel()
         #Choose Model type
         if reg_type == 'OLS':
+            #beta = ols_svd_X(X_train,z_train)
             beta = ols_svd_X(X_train,z_train)
+            z_pred = X_test @ beta
+            z_train_pred = X_train @ beta
 
         elif reg_type == 'Ridge':
-            beta = Ridge_X(X_train,z_train,lamd)
+            #beta = Ridge_X2(X_train[:,1:],z_train,lamb)
+            beta = Ridge_X2(X_train[:,1:],z_train,lamb)
+            z_pred = X_test[:, 1:] @ beta
+            z_train_pred = X_train[:, 1:] @ beta
+
+        elif reg_type == 'Lasso':
+            clf = Lasso(alpha=lamb,max_iter=5000)
+            clf.fit(X_train[:,1:], z_train)
+            beta = clf.coef_
+            z_pred = X_test[:, 1:] @ beta
+            z_train_pred = X_train[:, 1:] @ beta
         else:
             print("Not a valid Regression model")
             return 0
         #Create values based on training predictors
-        z_pred = X_test@beta
-        z_train_pred = X_train@beta
+        #z_pred = X_test[:,1:]@beta
+        #z_train_pred = X_train[:,1:]@beta
 
         MSE_tot = np.append(MSE_tot,MSE(z_test, z_pred))
         MSE_train = np.append(MSE_train, MSE(z_train, z_train_pred))
         bias = np.append(bias, np.mean((z_test - np.mean(z_pred)) ** 2))
         variance = np.append(variance, np.var(z_pred))
-        betas = np.append(betas,beta)
-        print("Betas",betas.shape)
+        if(beta_out):
+            betas[i,:] = beta
     bias_avg = np.average(bias)
     variance_avg = np.average(variance)
     MSE_tot_avg = np.average(MSE_tot)
     MSE_train_avg = np.average(MSE_train)
     beta_avg = np.mean(betas,axis=0,keepdims=True)
-    print("Beta_avg",beta_avg)
+    if (beta_out):
+        '''
+        j = 0
+        beta_ret = np.zeros(int(len(betas)/folds))
+        for i in range(int(len(betas)/folds)):
+        beta_ret[i] = np.average(betas[i::5])
+        '''
+        return np.mean(betas,axis=0,keepdims=True)
+    else:
+        return MSE_tot_avg, MSE_train_avg, bias_avg, variance_avg
 
-    return MSE_tot_avg, MSE_train_avg, bias_avg, variance_avg,beta
 
-
-def k_fold2(x,y,z,deg,folds,reg_type,lamd=0):
+def k_fold2(x,y,z,deg,folds,reg_type,lamd=0,alpha=0.1):
     #p = int(0.5 * (deg + 2) * (deg + 1))
     kf = KFold(folds,True,5)
 
@@ -251,17 +288,21 @@ def k_fold2(x,y,z,deg,folds,reg_type,lamd=0):
 
 
         #Make z_train 1D
-        ztrain = ztrain.ravel()
         x_ = np.c_[xtrain,ytrain]
         poly = PolynomialFeatures(degree=deg)
         X_train = poly.fit_transform(x_)
 
         #Choose Model type
         if reg_type == 'OLS':
-            beta = ols_svd_X(X_train,ztrain)
+            beta = OLS_sk_X(X_train,ztrain)
 
         elif reg_type == 'Ridge':
-            beta = Ridge_X(X_train,ztrain,lamd)
+            beta = Ridge_X2(X_train,ztrain,lamd)
+            #beta = Ridge_sk(xtrain,ytrain,ztrain,lamd,deg)
+        elif reg_type == 'Lasso':
+            clf = Lasso(alpha,fit_intercept=False,max_iter=1000)
+            clf.fit(X_train, ztrain)
+            beta = clf.coef_
         else:
             print("Not a valid Regression model")
             return 0
@@ -272,19 +313,18 @@ def k_fold2(x,y,z,deg,folds,reg_type,lamd=0):
         #Create values based on training predictors
         z_pred = X_test@beta
         z_train_pred = X_train@beta
-
         MSE_tot = np.append(MSE_tot,MSE(ztest, z_pred))
         MSE_train = np.append(MSE_train, MSE(ztrain, z_train_pred))
         bias = np.append(bias, np.mean((ztest - np.mean(z_pred)) ** 2))
         variance = np.append(variance, np.var(z_pred))
         betas = np.append(betas,beta)
-
     bias_avg = np.average(bias)
     variance_avg = np.average(variance)
     MSE_tot_avg = np.average(MSE_tot)
     MSE_train_avg = np.average(MSE_train)
+    beta_avg = np.average(betas)
 
-    return MSE_tot_avg, MSE_train_avg, bias_avg, variance_avg,betas
+    return MSE_tot_avg, MSE_train_avg, bias_avg, variance_avg, beta_avg
 
 def BV(x,y,z,deg,folds,reg_type,lamb = 0):
 

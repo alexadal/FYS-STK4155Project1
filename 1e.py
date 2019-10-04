@@ -1,108 +1,58 @@
 from functions import MSE,k_fold1,FrankeFunc,k_fold2,Ridge_sk_X
+from matplotlib.ticker import LinearLocator, FormatStrFormatter
+from matplotlib import cm
 
 import numpy as np
 import matplotlib.pyplot as plt
-'''
-#Initiating data
+from mpl_toolkits.mplot3d import Axes3D
 np.set_printoptions(precision=4)
 
-#Datapoints - how many & DegreeMax
-
-D = 10000
-Deg_max = 5
 # Make data grid give same shape as x in exercise
-#np.random.seed(10)
+x = np.arange(0, 1, 0.001)
+y = np.arange(0, 1, 0.001)
+X, Y = np.meshgrid(x,y)
 
-x1 = np.random.rand(D,1)
-y1 = np.random.rand(D,1)
-
-#x1 = x1.ravel()
-#y1 = y1.ravel()
-#print(x1.shape)
-
-#Sort before printing
-X = np.sort(x1,axis=0)
-Y = np.sort(y1,axis=0)
-#Create meshgrid for plotting
-#x_train,y_train = np.meshgrid(X, Y)
-
-#x, y = np.meshgrid(X,Y)
-
-#x1d = x.reshape((D**2, 1))
-#y1d = y.reshape((D**2, 1))
-
-#Create 1d arrays
-x1d = x1.ravel()
-y1d = y1.ravel()
-
-
-#Obtain true function
-#z = FrankeFunc(x_train,y_train)
-#True function or train function
-sigma = 0.5
-z_true = np.zeros(D)
-for i in range(D):
-    error = np.random.normal(0, sigma)
-    z_true[i] = FrankeFunc(x1d[i],y1d[i])+error
-#Initiate betas
-X = X.ravel()
-Y = Y.ravel()
 '''
-
-np.set_printoptions(precision=4)
-
-#Datapoints - how many & DegreeMax
-
-D = 70
-Deg_max = 5
-lamd = 0.0
-# Make data grid give same shape as x in exercise
-np.random.seed(10)
-
-x1 = np.random.rand(D,1)
-y1 = np.random.rand(D,1)
-
-x1 = x1.ravel()
-y1 = y1.ravel()
-print(x1.shape)
-
-#Sort before printing
-X = np.sort(x1,axis=0)
-Y = np.sort(y1,axis=0)
-#Create meshgrid for plotting
-x_train,y_train = np.meshgrid(X, Y)
-
-x, y = np.meshgrid(X,Y)
-
-#x1d = x.reshape((D**2, 1))
-#y1d = y.reshape((D**2, 1))
-
-#Create 1d arrays
-x1d = x.ravel()
-y1d = y.ravel()
-
-
 #Obtain true function
-z = FrankeFunc(x_train,y_train)
+z = FrankeFunc(X,Y)
 #True function or train function
-sigma = 0.5
-error = np.random.normal(0,sigma,D**2)
+sigma = 1
+error = np.random.normal(0,sigma,size=z.shape)
+z = z + error
+fig = plt.figure()
+ax = fig.gca(projection='3d')
 
-print("error",error)
-z_true = FrankeFunc(x1d,y1d).ravel()+error
+surf = ax.plot_surface(X, Y, z, cmap=cm.coolwarm,
+                       linewidth=0, antialiased=False)
 
+
+
+print(z.shape)
+# Customize the z axis.
+ax.set_zlim(-0.10, 1.40)
+ax.zaxis.set_major_locator(LinearLocator(10))
+ax.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
+
+# Add a color bar which maps values to colors.
+fig.colorbar(surf, shrink=0.5, aspect=5)
+
+plt.show()
+'''
+sigma = 1
+z = FrankeFunc(x,y)
+error = np.random.normal(0,sigma,size=z.shape)
+z_true = z+error
+x1d = x
+y1d = y
+#z_true = z.ravel()
 print(z_true.shape)
-
-#Initiate betas
-X = X.ravel()
-Y = Y.ravel()
-
 #Find lambda
 folds = 5
 deg = 5
 i = 0
 #lamdas = [0, 1, 2, 4, 5, 10,50,100,1000,10**4,10**5,10**8,10**10,10**12,10**13,10**14]
-lamdas = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20]
+#lamdas = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20]
+lamdas = np.logspace(-6, 5, 100)
 MSE_test = np.zeros(len(lamdas))
 variance= np.zeros(len(lamdas))
 bias= np.zeros(len(lamdas))
@@ -118,7 +68,7 @@ fig = plt.figure()
 line_test, = plt.plot(lamdas,MSE_test,label='TEST')
 line_train, = plt.plot(lamdas,MSE_train,label='TRAINING')
 
-#plt.xscale('log')
+plt.xscale('log')
 #plt.yscale('log')
 
 #line_test1, = plt.plot(Degrees,average_MSE_test2,label='TEST2')
@@ -128,20 +78,6 @@ plt.legend(handles=[line_test,line_train])
 
 plt.show()
 
-
-summ = []
-sigmavec = np.full(len(lamdas),0)
-print(sigmavec)
-plt.figure(2)
-line_bias, = plt.plot(lamdas,bias,label='BIAS')
-line_var, = plt.plot(lamdas,variance,label='VARIANCE')
-line_test, = plt.plot(lamdas,MSE_test,label='TEST')
-
-summ =variance+bias+sigmavec
-dot_bi_var, = plt.plot(lamdas,summ,'ro',label='sum')
-
-plt.legend(handles=[line_bias,line_var,line_test,dot_bi_var])
-plt.show()
 
 
 '''

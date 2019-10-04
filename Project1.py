@@ -178,16 +178,15 @@ i = 0
 for deg in Degrees:
 
 
-    average_MSE_test[i], average_MSE_train[i], bias_avg[i], variance_avg[i],beta = k_fold1(x1d,y1d,z_true,deg,kfold1,'OLS',shuffle=True)
+    #average_MSE_test[i], average_MSE_train[i], bias_avg[i], variance_avg[i],beta = k_fold1(x1d,y1d,z_true,deg,kfold1,'OLS',shuffle=True)
     #average_MSE_test2[i], average_MSE_train2[i], bias_avg2[i], variance_avg2[i], beta2 = k_fold2(x1d, y1d, z_true, deg, kfold1, 'OLS')
-    average_MSE_test2[i], average_MSE_train2[i], bias_avg2[i], variance_avg2[i] = bootstrap(x1d, y1d, z_true, deg,'OLS',20)
-
+    #average_MSE_test2[i], average_MSE_train2[i], bias_avg2[i], variance_avg2[i] = bootstrap(x1d, y1d, z_true, deg,'OLS',n_bootstraps=20)
 
     MSE_test[i],bias[i],variance[i] = BV(x1d,y1d,z_true,deg,kfold1,'OLS')
     print('Error:', average_MSE_test2[i])
     print('Bias^2:', bias_avg2[i])
     print('Var:', variance_avg2[i])
-    print('{} >= {} + {} = {}'.format(average_MSE_test2[i], bias_avg2[i], variance_avg2[i], bias_avg2[i] + variance_avg2[i]))
+    print('{} >= {} + {} = {}'.format(average_MSE_test[i], bias_avg[i], variance_avg[i], bias_avg[i] + variance_avg[i]))
 
     i += 1
 
@@ -198,8 +197,8 @@ print("Predictor Matrix OLS false",predictr_of)"""
 
 print("Test error",average_MSE_test)
 print("Train error",average_MSE_train)
-print("Test error",average_MSE_test2)
-print("Train error",average_MSE_train2)
+#print("Test error",average_MSE_test2)
+#print("Train error",average_MSE_train2)
 
 """
 ------------------------------------------------------------------------------------
@@ -239,9 +238,11 @@ print("SK K-Fold False",np.average(estimated_mse_sklearn2))
 plt.figure(1)
 line_test, = plt.plot(Degrees,average_MSE_test,label='TEST')
 line_train, = plt.plot(Degrees,average_MSE_train,label='TRAINING')
-line_test1, = plt.plot(Degrees,average_MSE_test2,label='TEST2')
-line_train1, = plt.plot(Degrees,average_MSE_train2,label='TRAINING2')
-plt.legend(handles=[line_train,line_test,line_test1,line_train1])
+#line_test1, = plt.plot(Degrees,average_MSE_test2,label='TEST2')
+#line_train1, = plt.plot(Degrees,average_MSE_train2,label='TRAINING2')
+#plt.legend(handles=[line_train,line_test,line_test1,line_train1])
+plt.legend(handles=[line_test,line_train])
+
 plt.show()
 
 
@@ -249,11 +250,11 @@ summ = []
 sigmavec = np.full(len(Degrees),0)
 print(sigmavec)
 plt.figure(2)
-line_bias, = plt.plot(Degrees,bias_avg2,label='BIAS')
-line_var, = plt.plot(Degrees,variance_avg2,label='VARIANCE')
-line_test, = plt.plot(Degrees,average_MSE_test2,label='TEST')
+line_bias, = plt.plot(Degrees,bias_avg,label='BIAS')
+line_var, = plt.plot(Degrees,variance_avg,label='VARIANCE')
+line_test, = plt.plot(Degrees,average_MSE_test,label='TEST')
 
-summ =variance_avg2+bias_avg2+sigmavec
+summ =variance_avg+bias_avg+sigmavec
 dot_bi_var, = plt.plot(Degrees,summ,'ro',label='sum')
 
 plt.legend(handles=[line_bias,line_var,line_test,dot_bi_var])
