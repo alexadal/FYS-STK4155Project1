@@ -167,19 +167,15 @@ def random_indices(indices,X_fold,z_fold):
 
 def k_fold1(x,y,z,deg,folds,reg_type,shuffle=True,lamb=0.1,beta_out = False):
     #create designermatrix
-    p = int(0.5 * (deg + 2) * (deg+ 1))-1
+    p = int(0.5 * (deg + 2) * (deg + 1))
     x_deg = np.c_[x, y]
     poly = PolynomialFeatures(degree=deg)
     X_t = poly.fit_transform(x_deg)
     z_t = z
-    print(X_t.shape)
-
     if shuffle:
         indices = np.arange(len(z_t))
         X_t, z_t = random_indices(indices,X_t,z_t)
-        print("True")
-    else:
-        print("False")
+
 
     #print("Zfold",np.matrix(X_[:][1].tolist()))
     #Split data into k-folds
@@ -195,7 +191,7 @@ def k_fold1(x,y,z,deg,folds,reg_type,shuffle=True,lamb=0.1,beta_out = False):
     bias = []
     variance = []
     beta_avg = []
-    betas = np.zeros((deg,p))
+    betas = np.zeros((folds,p))
     for i in range(folds):
         X_train_i = X_fold
         z_train_i = z_fold
@@ -211,23 +207,26 @@ def k_fold1(x,y,z,deg,folds,reg_type,shuffle=True,lamb=0.1,beta_out = False):
         z_train = z_train.ravel()
         #Choose Model type
         if reg_type == 'OLS':
-            #beta = ols_svd_X(X_train,z_train)
             beta = ols_svd_X(X_train,z_train)
             z_pred = X_test @ beta
             z_train_pred = X_train @ beta
 
         elif reg_type == 'Ridge':
-            #beta = Ridge_X2(X_train[:,1:],z_train,lamb)
-            beta = Ridge_X2(X_train[:,1:],z_train,lamb)
-            z_pred = X_test[:, 1:] @ beta
-            z_train_pred = X_train[:, 1:] @ beta
+            beta = Ridge_X(X_train,z_train,lamb)
+            z_pred = X_test @ beta
+            z_train_pred = X_train @ beta
+
 
         elif reg_type == 'Lasso':
-            clf = Lasso(alpha=lamb,max_iter=5000)
-            clf.fit(X_train[:,1:], z_train)
+            clf = Lasso(alpha=lamb,max_iter=10**5,fit_intercept=False)
+            clf.fit(X_train, z_train)
+            #clf.fit(X_train[:,1:], z_train)
+
             beta = clf.coef_
-            z_pred = X_test[:, 1:] @ beta
-            z_train_pred = X_train[:, 1:] @ beta
+            z_pred = X_test @ beta
+            z_train_pred = X_train @ beta
+            #z_pred = X_test[:, 1:] @ beta
+            #z_train_pred = X_train[:, 1:] @ beta
         else:
             print("Not a valid Regression model")
             return 0
@@ -239,13 +238,15 @@ def k_fold1(x,y,z,deg,folds,reg_type,shuffle=True,lamb=0.1,beta_out = False):
         MSE_train = np.append(MSE_train, MSE(z_train, z_train_pred))
         bias = np.append(bias, np.mean((z_test - np.mean(z_pred)) ** 2))
         variance = np.append(variance, np.var(z_pred))
+        R2_tot = np.append(R2_tot, R_2(z_test, z_pred))
         if(beta_out):
             betas[i,:] = beta
     bias_avg = np.average(bias)
     variance_avg = np.average(variance)
     MSE_tot_avg = np.average(MSE_tot)
     MSE_train_avg = np.average(MSE_train)
-    beta_avg = np.mean(betas,axis=0,keepdims=True)
+    R2_avg = np.average(R2_tot)
+    #beta_avg = np.mean(betas,axis=0,keepdims=True)
     if (beta_out):
         '''
         j = 0
@@ -255,7 +256,7 @@ def k_fold1(x,y,z,deg,folds,reg_type,shuffle=True,lamb=0.1,beta_out = False):
         '''
         return np.mean(betas,axis=0,keepdims=True)
     else:
-        return MSE_tot_avg, MSE_train_avg, bias_avg, variance_avg
+        return MSE_tot_avg, MSE_train_avg, bias_avg, variance_avg, R2_avg
 
 
 def k_fold2(x,y,z,deg,folds,reg_type,lamd=0,alpha=0.1):

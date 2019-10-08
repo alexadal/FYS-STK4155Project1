@@ -9,21 +9,26 @@ np.set_printoptions(precision=4)
 np.random.seed(25)
 #Create datapoints:
 #Number of samples in each dimension:
-N = 5000
+N = 50
 x = np.arange(0, 1, 1/N)
 y = np.arange(0, 1, 1/N)
-
+x,y = np.meshgrid(x,y)
 sigma = 1
 z = FrankeFunc(x,y)
 error = np.random.normal(0,sigma,size=z.shape)
 z = z+error
+x = x.ravel()
+y = y.ravel()
+z = z.ravel()
+
+
+
 folds = 5
 deg = 5
 i = 0
-
-#OLS: MSE vs Complexity
 '''
-degrees = np.arange(30)
+#OLS: MSE vs Complexity
+degrees = np.arange(20)
 MSE_test = np.zeros(len(degrees))
 variance= np.zeros(len(degrees))
 bias= np.zeros(len(degrees))
@@ -32,16 +37,15 @@ beta = np.zeros(len(degrees))
 for deg in degrees:
     MSE_test[i], MSE_train[i], bias[i], variance[i] = k_fold1(x, y, z, deg, folds,'OLS')
     i = i+1
-MSE_test = np.sqrt(MSE_test)
-MSE_train = np.sqrt(MSE_train)
+
 
 fig = plt.figure()
 line_test, = plt.plot(degrees,MSE_test,label='TEST')
 line_train, = plt.plot(degrees,MSE_train,label='TRAINING')
 plt.legend(handles=[line_test,line_train])
 plt.show()
-'''
 
+'''
 '''
 #Ridge: MSE vs Complexity and lambda
 
@@ -76,9 +80,11 @@ plt.show()
 '''
 
 
-#MSE vs Complexity for Lasso
-degrees = np.arange(1,10,1)
-lambdas = [10**-4,10**-3,10**-1,1,10,100,10**3]
+#MSE vs Complexity and lambda for Lasso
+#degrees = np.arange(1,10,1)
+degrees = [5]
+lambdas = np.logspace(-4,4,50)
+#lambdas = [10**-4,10**-3,10**-1,1,10,100,10**3]
 MSE_test = np.zeros((len(lambdas),len(degrees)))
 variance= np.zeros((len(lambdas),len(degrees)))
 bias= np.zeros((len(lambdas),len(degrees)))
@@ -93,7 +99,7 @@ for lamb in lambdas:
         j = j+1
     i = i+1
 
-
+'''
 fig = plt.figure()
 i = 0
 lines = np.zeros(len(lambdas))
@@ -105,8 +111,11 @@ for i in range(len(lambdas)):
 
 plt.legend(linenames)
 plt.show()
-
-
+'''
+fig2 = plt.figure()
+plt.plot(lambdas,MSE_test[:,0])
+plt.xscale('log')
+plt.show()
 
 '''
 #Ridge: Beta vs lambda

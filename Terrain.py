@@ -20,9 +20,7 @@ from scipy.interpolate import griddata
 # Load the terrain
 
 
-terrain = imread("SRTM_data_Norway_100.tif")
-
-
+terrain = imread("SRTM_data_Norway_60_2.tif")
 
 # Show the terrain
 plt.figure(1)
@@ -41,20 +39,8 @@ plt.show()
 
 #z = terrain
 print("Terr",terrain.shape)
-
-
-
 n = len(terrain[0])
 m = len(terrain[:,1])
-
-
-
-
-
-
-
-
-
 x = np.linspace(0,50*m,m)
 y = np.linspace(0,50*n,n)
 X,Y = np.meshgrid(x,y)
@@ -63,14 +49,12 @@ print(Y.shape)
 
 
 # Plot the surface.
-
 fig = plt.figure(figsize=(16, 6))
 ax1 = fig.add_subplot(121, projection='3d')
 surf = ax1.plot_surface(X,Y,terrain.reshape(X.shape), rstride=1, cstride=1, cmap="coolwarm",
 linewidth=0, antialiased=False)
 fig.colorbar(surf, ax=ax1)
 plt.title("Random Patch Norway")
-
 ax2 = fig.add_subplot(122)
 cs = ax2.contourf(X, Y,terrain.reshape(X.shape),cmap='coolwarm')
 ax2.contour(cs, colors='k')
@@ -83,11 +67,10 @@ y = Y.ravel()
 #degree of polynomial
 degrees = [1,5,10,15,20,25,40]
 folds = 5
-
-
 i = 0
 
 #lamdas = np.logspace(-6, 5, 100)
+
 '''
 MSE_test = np.zeros(len(lamdas))
 variance= np.zeros(len(lamdas))
