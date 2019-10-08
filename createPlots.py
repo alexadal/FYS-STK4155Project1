@@ -1,7 +1,7 @@
 from functions import MSE,k_fold1,FrankeFunc,k_fold2,Ridge_sk_X
 from matplotlib.ticker import LinearLocator, FormatStrFormatter
 from matplotlib import cm
-from plotfunctions import plotOlsMSEVsComplexity,plotRidgeLambdaAnalysis,plotLassoLambdaAnalysis,plotRidgeBetaVsLambda,plotLassoBetaVsLambda,plotMSEvsNoise,compareRegressionMethodsAtOptimalConditions
+from plotfunctions import plotOlsMSEVsComplexity,plotRidgeLambdaAnalysis,plotLassoLambdaAnalysis,plotRidgeBetaVsLambda,plotLassoBetaVsLambda,plotMSEvsNoise,compareRegressionMethodsAtOptimalConditions,fitTerrainData
 import numpy as np
 from imageio import imread
 import matplotlib.pyplot as plt
@@ -22,6 +22,7 @@ if(use_terrain_data):
     x = np.linspace(0, 1, m)
     y = np.linspace(0, 1, n)
     x, y = np.meshgrid(x, y)
+
     '''
     # Show the terrain
     plt.figure(1)
@@ -55,7 +56,9 @@ if(use_terrain_data):
     #standardize the data
     #z = (z-np.mean(z))/np.std(z)
     print(min(z))
-
+    fitTerrainData(x, y, terrain, deg=9, lamb=0, folds=5, method='OLS', Franke=False)
+    fitTerrainData(x, y, terrain, deg=14, lamb=10**-9, folds=5, method='Ridge', Franke=False)
+    fitTerrainData(x, y, terrain, deg=20, lamb=10**-12, folds=5, method='Lasso', Franke=False)
     x = x.ravel()
     y = y.ravel()
 
@@ -113,13 +116,13 @@ degrees = [20]
 #lambdas = [10**-1]
 #lambdas = [10**-2,10**-1,10**0,10]
 plotLassoLambdaAnalysis(x,y,z,degrees,lambdas,folds)
-'''
+
 #Ridge: Beta vs lambda
 deg = 3
 lambdas = [10**-8, 10**-6, 10**-5, 10**-4,10**-3,10**-2,10**-1,1,10,100, 1000, 10**4]
 plotRidgeBetaVsLambda(x,y,z,deg,lambdas,folds)
 
-'''
+
 #Lasso: Beta vs lambda
 deg = 3
 #lambdas = [10**-6, 10**-5, 10**-4,10**-3,10**-2,10**-1,1,10,100, 1000, 10**4]
@@ -133,7 +136,7 @@ deg = 5
 lamb = 10**-3
 sigmas = np.linspace(0,1,10)
 plotMSEvsNoise(x,y,deg,sigmas,lamb,folds)
-
+'''
 if(use_terrain_data):
     degOLS = 9
     degRidge = 14
@@ -142,10 +145,11 @@ if(use_terrain_data):
     lambLasso = 10**-12
 else:
     degOLS = 4
-    degRidge = 3
+    degRidge = 5
     degLasso = 3
-    lambRidge = 10**-8
-    lambLasso = 10**-3
-compareRegressionMethodsAtOptimalConditions(x,y,z,degOLS,degRidge,degLasso,lambRidge,lambLasso,folds)
+    lambRidge = 10**-3
+    lambLasso = 10**-4
+compareRegressionMethodsAtOptimalConditions(x,y,z,degOLS,degRidge,degLasso,lambRidge,lambLasso,folds,Franke=True)
 
-'''
+
+

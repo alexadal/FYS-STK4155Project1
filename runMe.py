@@ -47,6 +47,7 @@ def main():
     print('---------------------------------------------------------------------------------------------')
     if user_input == 'y':
         use_terrain_data = True
+        Franke = False
         terrain = imread("SRTM_data_Norway_25.tif")
         n = len(terrain[0])
         m = len(terrain[:, 1])
@@ -73,6 +74,7 @@ def main():
         y = y.ravel()
     else:
         use_terrain_data = False
+        Franke = True
         N = 50
         x = np.arange(0, 1, 1/N)
         y = np.arange(0, 1, 1/N)
@@ -121,7 +123,7 @@ def main():
             if len(degrees) == 0:
                 degrees = [2, 4, 6, 10]
             print('Thinking about it...')
-            plotOlsMSEVsComplexity(x, y, z, degrees, folds)
+            plotOlsMSEVsComplexity(x, y, z, degrees, folds, Franke)
         if user_input == '2':
             degrees = get_degrees()
             lambdas = get_lambdas()
@@ -130,7 +132,7 @@ def main():
             if len(lambdas) == 0:
                 lambdas = [10**-4,10**-2,10**-1,10**0,10]
             print('Thinking about it...')
-            plotRidgeLambdaAnalysis(x, y, z, degrees, lambdas, folds)
+            plotRidgeLambdaAnalysis(x, y, z, degrees, lambdas, folds, Franke)
         if user_input == '3':
             degrees = get_degrees()
             lambdas = get_lambdas()
@@ -139,7 +141,7 @@ def main():
             if len(lambdas) == 0:
                 lambdas = [10**-4,10**-2,10**-1,10**0,10]
             print('Thinking about it...')
-            plotLassoLambdaAnalysis(x, y, z, degrees, lambdas, folds)
+            plotLassoLambdaAnalysis(x, y, z, degrees, lambdas, folds, Franke)
         if user_input == '4':
             deg = 0
             deg = int(input('Please enter the degree of the polynomial you want: '))
@@ -149,7 +151,7 @@ def main():
             if len(lambdas) == 0:
                 lambdas = [10**-4,10**-2,10**-1,10**0,10]
             print('Thinking about it...')
-            plotRidgeBetaVsLambda(x, y, z, deg, lambdas, folds)
+            plotRidgeBetaVsLambda(x, y, z, deg, lambdas, folds, Franke)
         if user_input == '5':
             deg = ''
             deg = int(input('Please enter the degree of the polynomial you want: '))
@@ -159,7 +161,7 @@ def main():
             if len(lambdas) == 0:
                 lambdas = [10**-4,10**-2,10**-1,10**0,10]
             print('Thinking about it...')
-            plotLassoBetaVsLambda(x, y, z, deg, lambdas, folds)
+            plotLassoBetaVsLambda(x, y, z, deg, lambdas, folds, Franke)
         print('---------------------------------------------------------------------------------------------')
 
 

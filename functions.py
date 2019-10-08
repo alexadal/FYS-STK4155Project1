@@ -165,7 +165,7 @@ def random_indices(indices,X_fold,z_fold):
     z_fold = z_fold[indices]
     return X_fold,z_fold
 
-def k_fold1(x,y,z,deg,folds,reg_type,shuffle=True,lamb=0.1,beta_out = False):
+def k_fold1(x,y,z,deg,folds,reg_type,shuffle=True,lamb=0.1,beta_out = False, Franke = False):
     #create designermatrix
     p = int(0.5 * (deg + 2) * (deg + 1))
     x_deg = np.c_[x, y]
@@ -233,7 +233,8 @@ def k_fold1(x,y,z,deg,folds,reg_type,shuffle=True,lamb=0.1,beta_out = False):
         #Create values based on training predictors
         #z_pred = X_test[:,1:]@beta
         #z_train_pred = X_train[:,1:]@beta
-
+        if Franke:
+            z_test = FrankeFunc(X_test[:,1],X_test[:,2]).ravel()
         MSE_tot = np.append(MSE_tot,MSE(z_test, z_pred))
         MSE_train = np.append(MSE_train, MSE(z_train, z_train_pred))
         bias = np.append(bias, np.mean((z_test - np.mean(z_pred)) ** 2))
