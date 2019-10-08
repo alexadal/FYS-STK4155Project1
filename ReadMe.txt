@@ -1,1 +1,1 @@
-
+Please run runMe.py in order to analyse the data. The program lets the user choose the data (Franke Function or Terrain), the regression method (OLS, Ridge or Lasso) and their respective parameters (polynomial degree and hyper paramater lambda).
