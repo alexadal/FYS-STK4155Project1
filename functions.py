@@ -133,27 +133,75 @@ def R_2(z, z_):
     return 1 - np.sum((z - z_) ** 2) / np.sum((z - np.mean(z_)) ** 2)
 
 
-def Conf_i(z,z_,x,y,beta,deg):
+def Conf_i(z,x,y,deg,reg_type,lamd =0,real_sigma=-1):
     #Create design matrix
+
+    se_beta = np.zeros(int(0.5*(deg+1)*(deg+2)))
+    #For Lasso set folds to 21 to get correct number of variances
+    z_pred, beta_end = k_fold_beta(x,y,z,deg,21,reg_type,lamd)
+    beta_avg = np.mean(beta_end,axis=0)
+    z_ = np.mean(z_pred,axis=0)
     x_deg = np.c_[x, y]
+    sigma_use = 0
+
     poly = PolynomialFeatures(degree=deg)
     X_ = poly.fit_transform(x_deg)
+    X_svd = X_-X_.mean(axis=0)
+    u, s, v = np.linalg.svd(X_svd,full_matrices=0)
+
     #Sigma as defined by book/slides - 1D
-    sigma = (1./(len(z)-len(X_[0,:])-1))*sum(((z-z_)**2))
+
+    covar = []
+    print("Bta_avg",beta_avg)
+    print("z_",z_.shape)
+    print("Z_true",z.shape)
+    if real_sigma < 0:
+        sigma_use = (1./(len(z)-len(X_[0,:])-1))*sum(((z-z_)**2))
+    else:
+        sigma_use = real_sigma
+    print("Sigma",sigma_use)
     #Obtain covar matrix
-    covar = np.linalg.inv(X_.T.dot(X_))*sigma
+    if reg_type == 'OLS':
+        covar = np.linalg.inv(X_.T.dot(X_)) * sigma_use
+        print("Var",s.shape)
+        #covar = np.dot(np.dot(v.T,np.diag(s**2)),v)/(X_svd.shape[0]-1)*sigma
+        se_beta = np.sqrt(np.diagonal(covar))
+        print("SE",se_beta)
+    elif reg_type == 'Ridge':
+        l_vec = np.eye(len(X_[0])) * lamd
+        covar = np.linalg.inv(X_.T.dot(X_)+l_vec) * sigma_use
+        se_beta = np.sqrt(np.diagonal(covar))
+    elif reg_type == 'Lasso':
+
+        var = np.var(beta_end,axis=1)
+        print("Var",var)
+        var = np.reshape(var,(-1,1))
+        se_beta = np.sqrt(var/np.sqrt(21-1))
+        print("SE", se_beta)
+    else:
+        print("Not a valid Regression model")
+        return 0
+
     #Standard error of betas are diagonal elements of covar matrix
-    se_beta = np.sqrt(np.diagonal(covar))
+
     #Make beta to be 1col times as many rows necesarry to get 1col
-    se_beta.reshape(-1,1)
-    interval = np.zeros((len(beta), 3))
-    for i in range((len(beta))):
+    se_beta.reshape((-1,1))
+    beta_avg.reshape((-1, 1))
+    print("SE", se_beta)
+    print("bet", beta_avg.shape)
+    interval = np.zeros((len(beta_avg), 3))
+    for i in range((len(beta_avg))):
         #Save first row beta
-        interval[i][0] = beta[i]
+        #interval[i][0] = beta_avg[i]
         #Save interval, lowwer first, 1.96 as we want 95% CI
-        interval[i][1] = beta[i] - 1.96 * se_beta[i]
-        interval[i][2] = beta[i] + 1.96 * se_beta[i]
-    return interval
+        #interval[i][1] = beta_avg[i] - 1.96 * se_beta[i]
+        #interval[i][1] = "\pm"
+        #interval[i][2] = beta_avg[i] + 1.96 * se_beta[i]
+        if reg_type == 'Lasso':
+            print("$\\beta_{"+str(i+1)+ "}$ & " + str(round(beta_avg[i],6)) + " & "+"$\pm$"+" & " + str(1.95*se_beta[i])+" \\\\")
+        else:
+            print("$\\beta_{"+str(i+1)+ "}$ & " + str(round(beta_avg[i],6)) + " & "+"$\pm$"+" & " + str(round(1.95*se_beta[i], 6))+" \\\\")
+    return 0
 
 
 def random_indices(indices,X_fold,z_fold):
